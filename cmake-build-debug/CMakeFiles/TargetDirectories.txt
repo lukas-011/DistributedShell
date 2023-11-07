@@ -1,0 +1,3 @@
+C:/Users/lukas/CLionProjects/DistributedShell/cmake-build-debug/CMakeFiles/DistributedShell.dir
+C:/Users/lukas/CLionProjects/DistributedShell/cmake-build-debug/CMakeFiles/edit_cache.dir
+C:/Users/lukas/CLionProjects/DistributedShell/cmake-build-debug/CMakeFiles/rebuild_cache.dir
