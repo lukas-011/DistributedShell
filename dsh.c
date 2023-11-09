@@ -5,3 +5,10 @@ int main() {
 
     return 0;
 }
+
+/*
+ * Start external processes. Calls fork syscall then execve syscall.
+ */
+int start_proc() {
+    return 0;
+}
