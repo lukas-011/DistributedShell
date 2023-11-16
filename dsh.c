@@ -5,6 +5,7 @@
 #include <unistd.h>
 
 #define BUFFER 32
+#define CMD_BUFFER 128
 
 // Program function prototypes
 int startProc(char* procName);
@@ -21,9 +22,9 @@ char* stripNewline(char* charArr);
  */
 int main() {
     while(1) {
-        char userInput[BUFFER];
+        char userInput[CMD_BUFFER];
         printf(">");
-        fgets(userInput, BUFFER, stdin);
+        fgets(userInput, CMD_BUFFER, stdin);
         doCommand(userInput);
     }
     return 9;
@@ -62,11 +63,13 @@ int doCommand(char* cmd) {
  */
 int startProc(char* procName) {
     // TODO: Check if file exists
+    // TODO: Implement running commands from PATH variable.
+    // FIXME: Absolute paths no work :(
     int pid = fork();
+    int status = -99;
     // Parent
     if (pid > 0) {
-
-
+        waitpid(pid, &status, 0);
     }
     // Child
     else {
