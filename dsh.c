@@ -4,13 +4,18 @@
 
 #define BUFFER 32
 
-
+// Program function prototypes
 int startProc();
-int exitShell();
-int doCommand(const char* cmd);
+void exitShell();
+int doCommand(char* cmd);
 
-/*
+// Helper function prototypes
+char* stripNewline(char* charArr);
+
+/**
  * Program execution starts here
+ *
+ * @return 9 If we somehow break from the while loop.
  */
 int main() {
     while(1) {
@@ -19,14 +24,21 @@ int main() {
         fgets(userInput, BUFFER, stdin);
         doCommand(userInput);
     }
+    return 9;
 }
 
-/*
+/**
  * Determine which method to call based on user input
+ *
+ * @param cmd Command to run
+ *
+ * @return 0 if doing command was successful; 1 if failed
  */
-int doCommand(const char* cmd) {
+int doCommand(char* cmd) {
     //TODO: Let's clean the input rather than compare with \n.
-    const char* strExit = "exit\n";
+    const char* strExit = "exit";
+
+    cmd = stripNewline(cmd);
     // Compare with if internal command (m_...)
     // See if text is "exit"
     // Else, call startProc and run process
@@ -37,13 +49,35 @@ int doCommand(const char* cmd) {
     return 0;
 }
 
-/*
+/**
  * Start external processes. Calls fork syscall then execve syscall.
+ *
+ * @return 0 if starting process was successful; 1 if not.
  */
 int startProc() {
     return 0;
 }
 
-int exitShell() {
+/**
+ * Exits the dsh shell.
+ */
+void exitShell() {
     exit(0);
+}
+
+/**
+ * Removes trailing \n from char array.
+ *
+ * @param charArray Character array to strip \\n from
+ *
+ * @return The stripped char array
+ */
+char* stripNewline(char* charArr) {
+    for (int i=0; i<BUFFER; i++) {
+        if (charArr[i] == '\n') {
+            charArr[i] = '\0';
+            break;
+        }
+    }
+    return charArr;
 }
