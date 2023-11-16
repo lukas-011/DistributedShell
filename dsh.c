@@ -1,11 +1,13 @@
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
+#include <sys/wait.h>
+#include <unistd.h>
 
 #define BUFFER 32
 
 // Program function prototypes
-int startProc();
+int startProc(char* procName);
 void exitShell();
 int doCommand(char* cmd);
 
@@ -46,6 +48,10 @@ int doCommand(char* cmd) {
     if (strcmp(cmd, strExit) == 0) {
         exitShell();
     }
+    // No matches? Try to start command
+    else {
+        startProc(cmd);
+    }
     return 0;
 }
 
@@ -54,7 +60,19 @@ int doCommand(char* cmd) {
  *
  * @return 0 if starting process was successful; 1 if not.
  */
-int startProc() {
+int startProc(char* procName) {
+    // TODO: Check if file exists
+    int pid = fork();
+    // Parent
+    if (pid > 0) {
+
+
+    }
+    // Child
+    else {
+        execve(procName, NULL, NULL);
+        exit(0);
+    }
     return 0;
 }
 
@@ -66,7 +84,7 @@ void exitShell() {
 }
 
 /**
- * Removes trailing \n from char array.
+ * Removes trailing \\n from char array.
  *
  * @param charArray Character array to strip \\n from
  *
