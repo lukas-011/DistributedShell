@@ -6,6 +6,7 @@
 
 #define BUFFER 32
 #define CMD_BUFFER 128
+#define MAX_BUFFER 128
 
 // Program function prototypes
 int startProc(char* procName);
@@ -64,7 +65,7 @@ int doCommand(char* cmd) {
 int startProc(char* procName) {
     // TODO: Check if file exists
     // TODO: Implement running commands from PATH variable.
-    // FIXME: Absolute paths no work :(
+    // FIXME: Past 4 levels programs won't start in absolute path?
     int pid = fork();
     int status = -99;
     // Parent
@@ -94,11 +95,12 @@ void exitShell() {
  * @return The stripped char array
  */
 char* stripNewline(char* charArr) {
-    for (int i=0; i<BUFFER; i++) {
+    for (int i=0; i<MAX_BUFFER; i++) {
         if (charArr[i] == '\n') {
             charArr[i] = '\0';
             break;
         }
     }
+
     return charArr;
 }
