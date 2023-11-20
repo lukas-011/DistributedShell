@@ -51,6 +51,9 @@ int startProc(char* procName);
 void exitShell();
 int doCommand(char* cmd);
 int doMAgent(char* cmd);
+int doMCp(char* cmd);
+int doMRun(char* cmd);
+int initialize();
 
 // Helper function prototypes
 char* stripNewline(char* charArr);
@@ -62,9 +65,8 @@ char* separateArguments(char* charArr, enum ArgCase argCase);
  * @return 9 If we somehow break from the while loop.
  */
 int main() {
-
-    // Set PATH struct
-    separateArguments(getenv(STR_PATH), PATH_VAR);
+    initialize();
+    printf("%s",STR_GREETING);
 
     while(1) {
         char userInput[CMD_BUFFER];
@@ -72,6 +74,17 @@ int main() {
         fgets(userInput, CMD_BUFFER, stdin);
         doCommand(userInput);
     }
+}
+
+/**
+ * Initialize defaults for the program
+ * @return 0 on exit
+ */
+int initialize() {
+    // Set PATH struct
+    separateArguments(getenv(STR_PATH), PATH_VAR);
+
+    return 0;
 }
 
 /**
@@ -88,11 +101,21 @@ int doCommand(char* cmd) {
     cmd = stripNewline(cmd);
     baseCmd = separateArguments(cmd, FIRST);
 
+    // Does the user want to exit?
     if (strcmp(baseCmd, STR_EXIT) == 0) {
         exitShell();
     }
+    // Does the user want to run m_agent?
     else if (strcmp(baseCmd, STR_M_AGENT) == 0) {
         doMAgent(cmd);
+    }
+    // Does the user want to run m_cp?
+    else if (strcmp(baseCmd, STR_M_CP) == 0) {
+        doMCp(cmd);
+    }
+    // Does the user want to run m_run?
+    else if (strcmp(baseCmd, STR_M_RUN) == 0) {
+        doMRun(cmd);
     }
     // No matches? Try to start command
     else {
@@ -106,6 +129,19 @@ int doCommand(char* cmd) {
 int doMAgent(char* cmd) {
     // Implement me!
     printf("m_agent goes here\n");
+    return 0;
+}
+
+int doMCp(char* cmd) {
+    // Implement me!
+    printf("m_cp goes here\n");
+    return 0;
+}
+
+int doMRun(char* cmd) {
+    // Implement me!
+    printf("m_run goes here\n");
+    return 0;
 }
 
 /**
