@@ -22,10 +22,11 @@ enum ArgCase {
 int startProc(char* procName);
 void exitShell();
 int doCommand(char* cmd);
+int doMAgent(char* cmd);
 
 // Helper function prototypes
 char* stripNewline(char* charArr);
-char* separateArguments(char* charArr, enum ArgCase internalCmd);
+char* separateArguments(char* charArr, enum ArgCase argCase);
 
 
 
@@ -37,17 +38,12 @@ char* separateArguments(char* charArr, enum ArgCase internalCmd);
  * @return 9 If we somehow break from the while loop.
  */
 int main() {
-
-    char* big = separateArguments("big john",FIRST);
-    printf("Look out for the: %s\n",big);
-
     while(1) {
         char userInput[CMD_BUFFER];
         printf(">");
         fgets(userInput, CMD_BUFFER, stdin);
         doCommand(userInput);
     }
-    return 9;
 }
 
 /**
@@ -58,26 +54,28 @@ int main() {
  * @return 0 if doing command was successful; 1 if failed
  */
 int doCommand(char* cmd) {
+    char* baseCmd;
 
-    // Strings to compare against
-    const char* strExit = "exit";
-    const char* strM_agent = "m_agent";
-    const char* strM_cp = "m_cp";
-    const char* strM_run = "m_run";
-
+    // Remove new line from command
     cmd = stripNewline(cmd);
-    // Compare with if internal command (m_...)
-    // See if text is "exit"
-    // Else, call startProc and run process
+    baseCmd = separateArguments(cmd, FIRST);
 
-    if (strcmp(cmd, strExit) == 0) {
+    if (strcmp(baseCmd, STR_EXIT) == 0) {
         exitShell();
+    }
+    else if (strcmp(baseCmd, STR_M_AGENT) == 0) {
+        doMAgent(cmd);
     }
     // No matches? Try to start command
     else {
         startProc(cmd);
     }
     return 0;
+}
+
+int doMAgent(char* cmd) {
+    // Implement me!
+    printf("m_agent goes here\n");
 }
 
 /**
@@ -88,7 +86,6 @@ int doCommand(char* cmd) {
 int startProc(char* procName) {
     // TODO: Check if file exists
     // TODO: Implement running commands from PATH variable.
-    // FIXME: Past 4 levels programs won't start in absolute path?
     int pid = fork();
     int status = -99;
     // Parent
@@ -128,8 +125,15 @@ char* stripNewline(char* charArr) {
     return charArr;
 }
 
-char* separateArguments(char* charArr, enum ArgCase internalCmd) {
-    switch (internalCmd) {
+/**
+ * Separate arguments.
+ * @param charArr The array to pick apart
+ * @param argCase The case which determines where arguments go:
+ *      - FIRST: Return the first command.
+ * @return
+ */
+char* separateArguments(char* charArr, enum ArgCase argCase) {
+    switch (argCase) {
         case (FIRST): {
             // The goal: Get returnString to equal the first "string" in charArr
             char* returnString = malloc(sizeof(charArr));
