@@ -1,0 +1,10 @@
+//
+// Created by pj on 11/19/23.
+//
+
+#ifndef DISTRIBUTEDSHELL_CONSTANTS_H
+#define DISTRIBUTEDSHELL_CONSTANTS_H
+
+#define STR_SPACE " "
+
+#endif //DISTRIBUTEDSHELL_CONSTANTS_H

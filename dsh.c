@@ -3,11 +3,20 @@
 #include <stdlib.h>
 #include <sys/wait.h>
 #include <unistd.h>
+#include "constants.h"
 
 // We can use different buffer sizes to save memory
 #define BUFFER 32
 #define CMD_BUFFER 128
 #define MAX_BUFFER 128 // Should equal whatever the biggest buffer is. Used for worst-case scenario stuff.
+
+// Arguments, used in separateArguments.
+enum ArgCase {
+    FIRST,
+    M_AGENT,
+    M_CP,
+    M_RUN
+};
 
 // Program function prototypes
 int startProc(char* procName);
@@ -16,15 +25,10 @@ int doCommand(char* cmd);
 
 // Helper function prototypes
 char* stripNewline(char* charArr);
-char* separateArguments(char* charArr, int internalCmd);
+char* separateArguments(char* charArr, enum ArgCase internalCmd);
 
-// Enumerator for commands, in switch statements
 
-enum InternalCmd {
-    M_AGENT,
-    M_CP,
-    M_RUN
-};
+
 
 
 /**
@@ -33,6 +37,10 @@ enum InternalCmd {
  * @return 9 If we somehow break from the while loop.
  */
 int main() {
+
+    char* big = separateArguments("big john",FIRST);
+    printf("Look out for the: %s\n",big);
+
     while(1) {
         char userInput[CMD_BUFFER];
         printf(">");
@@ -120,8 +128,25 @@ char* stripNewline(char* charArr) {
     return charArr;
 }
 
-char* separateArguments(char* charArr, int internalCmd) {
+char* separateArguments(char* charArr, enum ArgCase internalCmd) {
     switch (internalCmd) {
+        case (FIRST): {
+            // The goal: Get returnString to equal the first "string" in charArr
+            char* returnString = malloc(sizeof(charArr));
+            for (int i=0; i<MAX_BUFFER; i++) {
+                // If we reach end of string, break to avoid outta bounds
+                if (charArr[i] == '\0') {
+                    break;
+                }
+                // If we find a space, stop the count!
+                if (charArr[i] == ' ') {
+                    break;
+                }
+                returnString[i] = charArr[i];
+            }
+            return returnString;
+
+        }
         case (M_AGENT): {
             /* m_agent has the following:
              * create <ip> <port>
