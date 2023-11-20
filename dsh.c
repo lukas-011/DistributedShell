@@ -4,9 +4,10 @@
 #include <sys/wait.h>
 #include <unistd.h>
 
+// We can use different buffer sizes to save memory
 #define BUFFER 32
 #define CMD_BUFFER 128
-#define MAX_BUFFER 128
+#define MAX_BUFFER 128 // Should equal whatever the biggest buffer is. Used for worst-case scenario stuff.
 
 // Program function prototypes
 int startProc(char* procName);
@@ -15,6 +16,16 @@ int doCommand(char* cmd);
 
 // Helper function prototypes
 char* stripNewline(char* charArr);
+char* separateArguments(char* charArr, int internalCmd);
+
+// Enumerator for commands, in switch statements
+
+enum InternalCmd {
+    M_AGENT,
+    M_CP,
+    M_RUN
+};
+
 
 /**
  * Program execution starts here
@@ -39,8 +50,12 @@ int main() {
  * @return 0 if doing command was successful; 1 if failed
  */
 int doCommand(char* cmd) {
-    //TODO: Let's clean the input rather than compare with \n.
+
+    // Strings to compare against
     const char* strExit = "exit";
+    const char* strM_agent = "m_agent";
+    const char* strM_cp = "m_cp";
+    const char* strM_run = "m_run";
 
     cmd = stripNewline(cmd);
     // Compare with if internal command (m_...)
@@ -103,4 +118,24 @@ char* stripNewline(char* charArr) {
     }
 
     return charArr;
+}
+
+char* separateArguments(char* charArr, int internalCmd) {
+    switch (internalCmd) {
+        case (M_AGENT): {
+            /* m_agent has the following:
+             * create <ip> <port>
+             * list
+             * delete <ip>
+             */
+            for (int i=0;i<MAX_BUFFER;i++) {
+
+            }
+            break;
+        }
+        default: {
+            // Implement me! Should save arg for execve.
+            return charArr;
+        }
+    }
 }
