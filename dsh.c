@@ -15,7 +15,35 @@ enum ArgCase {
     FIRST,
     M_AGENT,
     M_CP,
-    M_RUN
+    M_RUN,
+    PATH_VAR
+};
+
+// Structs, which can store params from input
+
+struct PathVar {
+    char* DirectoryName;
+};
+
+struct PathVar PathVars[18] = {
+        {},
+        {},
+        {},
+        {},
+        {},
+        {},
+        {},
+        {},
+        {},
+        {},
+        {},
+        {},
+        {},
+        {},
+        {},
+        {},
+        {},
+        {}
 };
 
 // Program function prototypes
@@ -28,16 +56,16 @@ int doMAgent(char* cmd);
 char* stripNewline(char* charArr);
 char* separateArguments(char* charArr, enum ArgCase argCase);
 
-
-
-
-
 /**
  * Program execution starts here
  *
  * @return 9 If we somehow break from the while loop.
  */
 int main() {
+
+    // Set PATH struct
+    separateArguments(getenv(STR_PATH), PATH_VAR);
+
     while(1) {
         char userInput[CMD_BUFFER];
         printf(">");
@@ -70,6 +98,8 @@ int doCommand(char* cmd) {
     else {
         startProc(cmd);
     }
+
+    free(baseCmd);
     return 0;
 }
 
@@ -86,18 +116,49 @@ int doMAgent(char* cmd) {
 int startProc(char* procName) {
     // TODO: Check if file exists
     // TODO: Implement running commands from PATH variable.
-    int pid = fork();
-    int status = -99;
-    // Parent
-    if (pid > 0) {
-        waitpid(pid, &status, 0);
+    // TODO: Add support for arguments
+    int runProc = 0; // Should we attempt to start the new process?
+
+    // First, see if the provided input points to a file that exists:
+    if (access(procName, F_OK) == 0) {
+        runProc = 1;
     }
-    // Child
+    // No dice? See if it exists in path
+
+    //TODO: Either fix duplicates bug or just don't check them!
+    if (runProc == 0) {
+        for (int i=0; i<18; i++) {
+            char *checkDirectory = malloc(MAX_BUFFER);
+            sprintf(checkDirectory, "%s/%s", PathVars[i].DirectoryName, procName);
+            if (access(checkDirectory, F_OK) == 0) {
+                runProc = 1;
+                procName = checkDirectory;
+                break;
+            }
+        }
+    }
+
+    // Still nothing? runProc still equals 0, so don't bother trying to run.
+
+    if (runProc) {
+        int pid = fork();
+        int status = -99;
+        // Parent
+        if (pid > 0) {
+            waitpid(pid, &status, 0);
+        }
+            // Child
+        else {
+            execve(procName, NULL, NULL);
+            exit(0);
+        }
+        return 0;
+    }
     else {
-        execve(procName, NULL, NULL);
-        exit(0);
+        // We failed to start the process :(
+        return 1;
     }
-    return 0;
+
 }
 
 /**
@@ -162,9 +223,30 @@ char* separateArguments(char* charArr, enum ArgCase argCase) {
             }
             break;
         }
-        default: {
-            // Implement me! Should save arg for execve.
-            return charArr;
+        case (PATH_VAR): {
+            // TODO: We can problem improve this by iterating only for as many times as there is a ":" divider.
+            int startingPoint = 0;
+            // Name of directory to set in struct
+
+            for (int i=0; i<18; i++) {
+                char* dirName = malloc(MAX_BUFFER);
+
+                for (int j=startingPoint; j<MAX_BUFFER; j++) {
+                    if (charArr[j] == '\0') {
+                        break;
+                    }
+                    if (charArr[j] == ':') {
+                        // Set starting point
+                        startingPoint = j+1;
+                        break;
+                    }
+                    dirName[j-startingPoint] = charArr[j];
+                }
+                // Set struct info
+                PathVars[i].DirectoryName = dirName;
+            }
         }
     }
+    // Pro Tip: Seg fault? Might have not returned in switch!
+    return NULL;
 }

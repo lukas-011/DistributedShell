@@ -9,5 +9,6 @@
 #define STR_M_CP "m_cp"
 #define STR_M_RUN "m_run"
 #define STR_EXIT "exit"
+#define STR_PATH "PATH"
 
 #endif //DISTRIBUTEDSHELL_CONSTANTS_H
