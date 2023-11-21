@@ -66,7 +66,7 @@ int initialize();
 
 // Helper function prototypes
 char* stripNewline(char* charArr);
-char* separateArguments(char* charArr, enum ArgCase argCase);
+char* separateArguments(char* charArr, enum ArgCase argCase, void* structToSet);
 
 /**
  * Program execution starts here
@@ -243,9 +243,10 @@ char* stripNewline(char* charArr) {
  *      \n- M_CP: Set struct for m_cp
  *      \n- M_RUN: Set struct for m_run
  *      \n- PATH_VAR: Set struct for PATH variable
+ * @param structToSet If we're setting a struct, set it.
  * @return
  */
-char* separateArguments(char* charArr, enum ArgCase argCase) {
+char* separateArguments(char* charArr, enum ArgCase argCase, void* structToSet) {
     switch (argCase) {
         case (FIRST): {
             // The goal: Get returnString to equal the first "string" in charArr
