@@ -137,6 +137,8 @@ int doCommand(char* cmd) {
 //TODO: Not done
 int doMAgent(char* cmd) {
     // Implement me!
+    struct MAgentParam MAgentParams[1] = { {} };
+    separateArguments(cmd, M_AGENT);
     printf("m_agent goes here\n");
     // Do separate again
     return 0;
@@ -246,6 +248,7 @@ char*
  *      \n- M_CP: Set struct for m_cp
  *      \n- M_RUN: Set struct for m_run
  *      \n- PATH_VAR: Set struct for PATH variable
+ * @param structToSet If we're setting a struct, set it.
  * @return
  */
 char* separateArguments(char* charArr, enum ArgCase argCase) {
@@ -273,7 +276,6 @@ char* separateArguments(char* charArr, enum ArgCase argCase) {
              * list
              * delete <ip>
              */
-            struct MAgentParam MAgentParams[1] = { {} };
             for (int i=0;i<MAX_BUFFER;i++) {
 
             }
