@@ -303,6 +303,7 @@ char* separateArguments(char* charArr, enum ArgCase argCase) {
         }
 
     }
+    // Bad Tip: 15%
     // Pro Tip: Seg fault? Might have not returned in switch!
     return NULL;
 }
