@@ -305,3 +305,6 @@ char* separateArguments(char* charArr, enum ArgCase argCase) {
 
 
 // new stuff
+
+
+//MORE new stuff
