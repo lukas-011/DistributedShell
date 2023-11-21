@@ -20,8 +20,7 @@ enum ArgCase {
 };
 
 // Structs, which can store params from input
-
-
+// Lukas dbwaoudbeabfboevfhea
 struct PathVar {
     char* DirectoryName;
 };
@@ -95,8 +94,6 @@ int initialize() {
 
     return 0;
 }
-
-// kacki likes grapes
 
 /**
  * Determine which method to call based on user input
