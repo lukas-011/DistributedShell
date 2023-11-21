@@ -302,3 +302,6 @@ char* separateArguments(char* charArr, enum ArgCase argCase) {
     // Pro Tip: Seg fault? Might have not returned in switch!
     return NULL;
 }
+
+
+// new stuff
