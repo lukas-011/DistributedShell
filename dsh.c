@@ -46,6 +46,14 @@ struct PathVar PathVars[18] = {
         {}
 };
 
+struct MAgentParam {
+    char* param;
+    char* ip;
+    char* port;
+};
+
+struct MAgentParam MAgentParams[1] = { {} };
+
 // Program function prototypes
 int startProc(char* procName);
 void exitShell();
@@ -129,6 +137,7 @@ int doCommand(char* cmd) {
 int doMAgent(char* cmd) {
     // Implement me!
     printf("m_agent goes here\n");
+    // Do separate again
     return 0;
 }
 
@@ -226,7 +235,11 @@ char* stripNewline(char* charArr) {
  * Separate arguments.
  * @param charArr The array to pick apart
  * @param argCase The case which determines where arguments go:
- *      - FIRST: Return the first command.
+ *      \n- FIRST: Return the first string in the command.
+ *      \n- M_AGENT: Set struct for m_agent
+ *      \n- M_CP: Set struct for m_cp
+ *      \n- M_RUN: Set struct for m_run
+ *      \n- PATH_VAR: Set struct for PATH variable
  * @return
  */
 char* separateArguments(char* charArr, enum ArgCase argCase) {
@@ -280,8 +293,12 @@ char* separateArguments(char* charArr, enum ArgCase argCase) {
                 }
                 // Set struct info
                 PathVars[i].DirectoryName = dirName;
+
+                //FIXME: Not freed! Is this okay?
             }
+
         }
+
     }
     // Pro Tip: Seg fault? Might have not returned in switch!
     return NULL;
