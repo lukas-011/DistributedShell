@@ -20,6 +20,7 @@ enum ArgCase {
 };
 
 // Structs, which can store params from input
+// lol
 
 struct PathVar {
     char* DirectoryName;
