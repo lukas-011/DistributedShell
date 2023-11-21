@@ -135,6 +135,7 @@ int doCommand(char* cmd) {
 }
 
 //TODO: Not done
+// PJ
 int doMAgent(char* cmd) {
     // Implement me!
     struct MAgentParam MAgentParams[1] = { {} };
@@ -145,6 +146,7 @@ int doMAgent(char* cmd) {
 }
 
 //TODO: Not done
+// Lukas
 int doMCp(char* cmd) {
     // Implement me!
     printf("m_cp goes here\n");
@@ -152,6 +154,7 @@ int doMCp(char* cmd) {
 }
 
 //TODO: Not done
+// Anothony
 int doMRun(char* cmd) {
     // Implement me!
     printf("m_run goes here\n");
