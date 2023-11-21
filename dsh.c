@@ -51,8 +51,6 @@ struct MAgentParam {
     char* port;
 };
 
-struct MAgentParam MAgentParams[1] = { {} };
-
 // Program function prototypes
 int startProc(char* procName);
 void exitShell();
@@ -268,6 +266,7 @@ char* separateArguments(char* charArr, enum ArgCase argCase) {
              * list
              * delete <ip>
              */
+            struct MAgentParam MAgentParams[1] = { {} };
             for (int i=0;i<MAX_BUFFER;i++) {
 
             }
