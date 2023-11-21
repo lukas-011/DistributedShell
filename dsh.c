@@ -62,7 +62,7 @@ int initialize();
 
 // Helper function prototypes
 char* stripNewline(char* charArr);
-char* separateArguments(char* charArr, enum ArgCase argCase, void* structToSet);
+char* separateArguments(char* charArr, enum ArgCase argCase);
 
 /**
  * Program execution starts here
@@ -135,6 +135,8 @@ int doCommand(char* cmd) {
 
 int doMAgent(char* cmd) {
     // Implement me!
+    struct MAgentParam MAgentParams[1] = { {} };
+    separateArguments(cmd, M_AGENT);
     printf("m_agent goes here\n");
     // Do separate again
     return 0;
@@ -242,7 +244,7 @@ char* stripNewline(char* charArr) {
  * @param structToSet If we're setting a struct, set it.
  * @return
  */
-char* separateArguments(char* charArr, enum ArgCase argCase, void* structToSet) {
+char* separateArguments(char* charArr, enum ArgCase argCase) {
     switch (argCase) {
         case (FIRST): {
             // The goal: Get returnString to equal the first "string" in charArr
@@ -267,7 +269,6 @@ char* separateArguments(char* charArr, enum ArgCase argCase, void* structToSet) 
              * list
              * delete <ip>
              */
-            struct MAgentParam MAgentParams[1] = { {} };
             for (int i=0;i<MAX_BUFFER;i++) {
 
             }
