@@ -106,6 +106,7 @@ int doCommand(char* cmd) {
 
     // Remove new line from command
     cmd = stripNewline(cmd);
+    //TODO: change this to its own seperate arguments
     baseCmd = separateArguments(cmd, FIRST);
 
     // Does the user want to exit?
@@ -133,6 +134,7 @@ int doCommand(char* cmd) {
     return 0;
 }
 
+//TODO: Not done
 int doMAgent(char* cmd) {
     // Implement me!
     printf("m_agent goes here\n");
@@ -140,12 +142,14 @@ int doMAgent(char* cmd) {
     return 0;
 }
 
+//TODO: Not done
 int doMCp(char* cmd) {
     // Implement me!
     printf("m_cp goes here\n");
     return 0;
 }
 
+//TODO: Not done
 int doMRun(char* cmd) {
     // Implement me!
     printf("m_run goes here\n");
@@ -230,6 +234,9 @@ char* stripNewline(char* charArr) {
     return charArr;
 }
 
+
+char*
+//**********************************************************************************************************************
 /**
  * Separate arguments.
  * @param charArr The array to pick apart
@@ -293,8 +300,6 @@ char* separateArguments(char* charArr, enum ArgCase argCase) {
                 }
                 // Set struct info
                 PathVars[i].DirectoryName = dirName;
-
-                //FIXME: Not freed! Is this okay?
             }
 
         }
@@ -304,6 +309,3 @@ char* separateArguments(char* charArr, enum ArgCase argCase) {
     // Pro Tip: Seg fault? Might have not returned in switch!
     return NULL;
 }
-
-
-// new stuff
