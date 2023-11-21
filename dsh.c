@@ -26,8 +26,6 @@ struct PathVar {
     char* DirectoryName;
 };
 
-// Ka
-
 struct PathVar PathVars[18] = {
         {},
         {},
@@ -99,7 +97,6 @@ int initialize() {
 }
 
 // kacki likes grapes
-// kacki likes snakes
 
 /**
  * Determine which method to call based on user input
