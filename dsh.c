@@ -94,6 +94,8 @@ int initialize() {
     return 0;
 }
 
+// kacki likes grapes
+
 /**
  * Determine which method to call based on user input
  *
@@ -299,12 +301,10 @@ char* separateArguments(char* charArr, enum ArgCase argCase) {
         }
 
     }
+    // Bad Tip: 15%
     // Pro Tip: Seg fault? Might have not returned in switch!
     return NULL;
 }
 
 
 // new stuff
-
-
-//MORE new stuff
