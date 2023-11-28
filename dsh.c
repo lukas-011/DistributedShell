@@ -19,10 +19,14 @@ enum ArgCase {
     PATH_VAR
 };
 
+// TODO: what is this for?
 struct Argument {
     char* argument;
 };
 
+/**
+ * Initialized global structs for Argument
+ */
 struct Argument Arguments[32] = {
         {},
         {},
@@ -63,6 +67,9 @@ struct PathVar {
     char* DirectoryName;
 };
 
+/**
+ * Initialized global structs for PathVar
+ */
 struct PathVar PathVars[18] = {
         {},
         {},
@@ -86,6 +93,7 @@ struct PathVar PathVars[18] = {
 
 /**
  * Parameters for m_agent
+ * Each m_agent will have a param, ip, and a port
  */
 struct MAgentParam {
     char* param; // create, list, delete
@@ -93,11 +101,9 @@ struct MAgentParam {
     char* port; //IP Port
 };
 
-struct MAgent {
-    char* ip;
-    char* port;
-};
-
+/**
+ * Initialized global structs for m_agent
+ */
 struct MAgent MAgents[32] = {
         {},
         {},
@@ -140,16 +146,19 @@ int doCommand(char* cmd);
 int doMAgent(char* cmd);
 int doMCp(char* cmd);
 int doMRun(char* cmd);
-int initialize();
+void initialize();
 
 // Helper function prototypes
 char* stripNewline(char* charArr);
-//char* separateArguments(char* charArr, enum ArgCase argCase); //DEPRECATED
-void separateArguments(char* args);
+//char* getFirstArgument(char* charArr, enum ArgCase argCase); //DEPRECATED
+void getFirstArgument(char* args);
+char* setStructForArgumentsPATH_VAR(char* charArr);
+char* setStructForM_AGENT(char* charArr);
+char* separateArgumentsFIRST(char* charArr);
 
 //**********************************************************************************************************************
 /**
- * Program execution starts here
+ * The driver function
  *
  * @return 9 If we somehow break from the while loop.
  */
@@ -168,18 +177,15 @@ int main() {
 //**********************************************************************************************************************
 /**
  * Initialize defaults for the program
- * @return 0 on exit
  */
-int initialize() {
+void initialize() {
     // Set PATH struct
-    separateArguments(getenv(STR_PATH), PATH_VAR);
-
-    return 0;
+    setArgumentForPATH_VAR();
 }
 
 //**********************************************************************************************************************
 /**
- * Determine which method to call based on user input
+ * Determines which method to call based on the command the user inputs
  *
  * @param cmd Command to run
  *
@@ -191,7 +197,7 @@ int doCommand(char* cmd) {
     // Remove new line from command
     cmd = stripNewline(cmd);
     //TODO: change this to its own seperate arguments
-    baseCmd = separateArguments(cmd, FIRST);
+    baseCmd = getFirstArgument(cmd);
 
     // Does the user want to exit?
     if (strcmp(baseCmd, STR_EXIT) == 0) {
@@ -221,6 +227,10 @@ int doCommand(char* cmd) {
 //**********************************************************************************************************************
 //TODO: Not done
 // PJ
+/**
+ * @param cmd
+ * @return
+ */
 int doMAgent(char* cmd) {
     // Implement me!
     struct MAgentParam MAgentParams[1] = { {} };
@@ -233,6 +243,11 @@ int doMAgent(char* cmd) {
 //**********************************************************************************************************************
 //TODO: Not done
 // Lukas
+/**
+ *
+ * @param cmd
+ * @return
+ */
 int doMCp(char* cmd) {
     // Implement me!
     printf("m_cp goes here\n");
@@ -241,6 +256,11 @@ int doMCp(char* cmd) {
 //**********************************************************************************************************************
 //TODO: Not done
 // Anothony
+/**
+ *
+ * @param cmd
+ * @return
+ */
 int doMRun(char* cmd) {
     // Implement me!
     printf("m_run goes here\n");
@@ -334,7 +354,7 @@ char* stripNewline(char* charArr) {
  *
  * @param charArr The array to separate arguments for
  *
- * @return
+ * @return TODO: What does this return?
  */
 char* separateArgumentsFIRST(char* charArr) {
             // The goal: Get returnString to equal the first "string" in charArr
@@ -357,11 +377,11 @@ char* separateArgumentsFIRST(char* charArr) {
 /**
  * Set struct for m_agent
  *
- * @param charArr The array to separate arguments for
+ * @param charArr contains the character array for the arguments we want to set in the struct
  *
- * @return
+ * @return TODO: what does this return?
  */
-char* separateArgumentsM_AGENT(char* charArr) {
+char* setStructForM_AGENT(char* charArr) {
     /* m_agent has the following:
     * create <ip> <port>
     * list
@@ -376,11 +396,11 @@ char* separateArgumentsM_AGENT(char* charArr) {
 /**
  * Set struct for PATH variable
  *
- * @param charArr The array to separate arguments for
+ * @param charArr contains the character array for the arguments we want to set in the struct
  *
- * @return
+ * @return TODO: What does this return?
  */
-char* separateArgumentsPATH_VAR(char* charArr) {
+char* setStructForArgumentsPATH_VAR(char* charArr) {
     // TODO: We can problem improve this by iterating only for as many times as there is a ":" divider.
     int startingPoint = 0;
     // Name of directory to set in struct
@@ -403,26 +423,34 @@ char* separateArgumentsPATH_VAR(char* charArr) {
     }
 
 }
-  */
 
-void separateArguments(char* args) {
-     int startingPoint = 0;
-     // Name of directory to set in struct
+//**********************************************************************************************************************
+/**
+ * TODO: What does this function do?
+ *
+ * @param args TODO: ?
+ *
+ * @return TODO: ?
+ */
+void getFirstArgument(char* args) {
+    int startingPoint = 0;
+    // Name of directory to set in struct
 
-     for (int i=0; i<18; i++) {
-         char* dirName = malloc(MAX_BUFFER);
+    for (int i = 0; i < 18; i++) {
+        char *dirName = malloc(MAX_BUFFER);
 
-         for (int j=startingPoint; j<MAX_BUFFER; j++) {
-             if (args[j] == '\0') {
-                 break;
-             }
-             if (args[j] == ':') {
-                 // Set starting point
-                 startingPoint = j+1;
-                 break;
-             }
-             dirName[j-startingPoint] = charArr[j];
-         }
-         // Set struct info
-         PathVars[i].DirectoryName = dirName;
+        for (int j = startingPoint; j < MAX_BUFFER; j++) {
+            if (args[j] == '\0') {
+                break;
+            }
+            if (args[j] == ':') {
+                // Set starting point
+                startingPoint = j + 1;
+                break;
+            }
+            dirName[j - startingPoint] = charArr[j];
+        }
+        // Set struct info
+        PathVars[i].DirectoryName = dirName;
+    }
 }
