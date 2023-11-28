@@ -23,6 +23,9 @@ struct Argument {
     char* argument;
 };
 
+/**
+ * Initialized global structs for Argument
+ */
 struct Argument Arguments[32] = {
         {},
         {},
@@ -63,6 +66,9 @@ struct PathVar {
     char* DirectoryName;
 };
 
+/**
+ * Initialized global structs for PathVar
+ */
 struct PathVar PathVars[18] = {
         {},
         {},
@@ -89,6 +95,19 @@ struct MAgent {
     char* port;
 };
 
+/**
+ * Parameters for m_agent
+ * Each m_agent will have a param, ip, and a port
+ */
+struct MAgentParam {
+    char* param; // create, list, delete
+    char* ip; //IP Address
+    char* port; //IP Port
+};
+
+/**
+ * Initialized global structs for m_agent
+ */
 struct MAgent MAgents[32] = {
         {},
         {},
@@ -141,13 +160,18 @@ int doCommand(char* cmd);
 int doMAgent(char* cmd);
 int doMCp(char* cmd);
 int doMRun(char* cmd);
-int initialize();
+void initialize();
 
 // Helper function prototypes
 char* stripNewline(char* charArr);
 //char* separateArguments(char* charArr, enum ArgCase argCase); //DEPRECATED
 void separateArguments(const char* args);
 char* separateArgumentsPATH_VAR(char* charArr);
+//char* getFirstArgument(char* charArr, enum ArgCase argCase); //DEPRECATED
+void getFirstArgument(char* args);
+char* setStructForArgumentsPATH_VAR(char* charArr);
+char* setStructForM_AGENT(char* charArr);
+char* separateArgumentsFIRST(char* charArr);
 
 //**********************************************************************************************************************
 /**
@@ -170,24 +194,20 @@ int main() {
 //**********************************************************************************************************************
 /**
  * Initialize defaults for the program
- * @return 0 on exit
  */
-int initialize() {
+void initialize() {
     // Set PATH struct
     separateArgumentsPATH_VAR(getenv(STR_PATH));
-
-    return 0;
 }
 
 //**********************************************************************************************************************
 /**
- * Determine which method to call based on user input
+ * Determines which method to call based on the command the user inputs
  *
  * @param cmd Command to run
  *
  * @return 0 if doing command was successful; 1 if failed
  */
-
 int doCommand(char* cmd) {
     // Remove new line from command
     cmd = stripNewline(cmd);
@@ -221,6 +241,10 @@ int doCommand(char* cmd) {
 //**********************************************************************************************************************
 //TODO: Not done
 // PJ
+/**
+ * @param cmd
+ * @return
+ */
 int doMAgent(char* cmd) {
     // Implement me!
     //struct MAgentParam MAgentParams[1] = { {} };
@@ -233,6 +257,11 @@ int doMAgent(char* cmd) {
 //**********************************************************************************************************************
 //TODO: Not done
 // Lukas
+/**
+ *
+ * @param cmd
+ * @return
+ */
 int doMCp(char* cmd) {
     // Implement me!
     printf("m_cp goes here\n");
@@ -241,6 +270,11 @@ int doMCp(char* cmd) {
 //**********************************************************************************************************************
 //TODO: Not done
 // Anothony
+/**
+ *
+ * @param cmd
+ * @return
+ */
 int doMRun(char* cmd) {
     // Implement me!
     printf("m_run goes here\n");
@@ -334,8 +368,9 @@ char* stripNewline(char* charArr) {
  *
  * @param charArr The array to separate arguments for
  *
- * @return
+ * @return TODO: What does this return?
  */
+ /*
 char* separateArgumentsFIRST(char* charArr) {
             // The goal: Get returnString to equal the first "string" in charArr
             char* returnString = malloc(sizeof(charArr));
@@ -352,16 +387,16 @@ char* separateArgumentsFIRST(char* charArr) {
             }
             return returnString;
 }
-
+*/
 //**********************************************************************************************************************
 /**
  * Set struct for m_agent
  *
- * @param charArr The array to separate arguments for
+ * @param charArr contains the character array for the arguments we want to set in the struct
  *
- * @return
+ * @return TODO: what does this return?
  */
-char* separateArgumentsM_AGENT(char* charArr) {
+char* setStructForM_AGENT(char* charArr) {
     /* m_agent has the following:
     * create <ip> <port>
     * list
@@ -376,11 +411,11 @@ char* separateArgumentsM_AGENT(char* charArr) {
 /**
  * Set struct for PATH variable
  *
- * @param charArr The array to separate arguments for
+ * @param charArr contains the character array for the arguments we want to set in the struct
  *
- * @return
+ * @return TODO: What does this return?
  */
-char* separateArgumentsPATH_VAR(char* charArr) {
+char* setStructForArgumentsPATH_VAR(char* charArr) {
     // TODO: We can problem improve this by iterating only for as many times as there is a ":" divider.
     int startingPoint = 0;
     // Name of directory to set in struct
