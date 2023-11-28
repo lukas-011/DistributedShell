@@ -301,6 +301,7 @@ int startProc(char* procName) {
 
 }
 
+//**********************************************************************************************************************
 /**
  * Exits the dsh shell.
  */
@@ -329,15 +330,10 @@ char* stripNewline(char* charArr) {
 
 //**********************************************************************************************************************
 /**
- * Separate arguments.
- * @param charArr The array to pick apart
- * @param argCase The case which determines where arguments go:
- *      \n- FIRST: Return the first string in the command.
- *      \n- M_AGENT: Set struct for m_agent
- *      \n- M_CP: Set struct for m_cp
- *      \n- M_RUN: Set struct for m_run
- *      \n- PATH_VAR: Set struct for PATH variable
- * @param structToSet If we're setting a struct, set it.
+ * FIRST: Return the first string in the command.
+ *
+ * @param charArr The array to separate arguments for
+ *
  * @return
  */
 char* separateArgumentsFIRST(char* charArr) {
@@ -357,7 +353,14 @@ char* separateArgumentsFIRST(char* charArr) {
             return returnString;
 }
 
-
+//**********************************************************************************************************************
+/**
+ * Set struct for m_agent
+ *
+ * @param charArr The array to separate arguments for
+ *
+ * @return
+ */
 char* separateArgumentsM_AGENT(char* charArr) {
     /* m_agent has the following:
     * create <ip> <port>
@@ -369,6 +372,14 @@ char* separateArgumentsM_AGENT(char* charArr) {
     }
 }
 
+//**********************************************************************************************************************
+/**
+ * Set struct for PATH variable
+ *
+ * @param charArr The array to separate arguments for
+ *
+ * @return
+ */
 char* separateArgumentsPATH_VAR(char* charArr) {
     // TODO: We can problem improve this by iterating only for as many times as there is a ":" divider.
     int startingPoint = 0;
