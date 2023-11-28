@@ -19,6 +19,45 @@ enum ArgCase {
     PATH_VAR
 };
 
+struct Argument {
+    char* argument;
+};
+
+struct Argument Arguments[32] = {
+        {},
+        {},
+        {},
+        {},
+        {},
+        {},
+        {},
+        {},
+        {},
+        {},
+        {},
+        {},
+        {},
+        {},
+        {},
+        {},
+        {},
+        {},
+        {},
+        {},
+        {},
+        {},
+        {},
+        {},
+        {},
+        {},
+        {},
+        {},
+        {},
+        {},
+        {},
+        {}
+};
+
 // Structs, which can store params from input
 struct PathVar {
     char* DirectoryName;
@@ -45,10 +84,53 @@ struct PathVar PathVars[18] = {
         {}
 };
 
+/**
+ * Parameters for m_agent
+ */
 struct MAgentParam {
-    char* param;
+    char* param; // create, list, delete
+    char* ip; //IP Address
+    char* port; //IP Port
+};
+
+struct MAgent {
     char* ip;
     char* port;
+};
+
+struct MAgent MAgents[32] = {
+        {},
+        {},
+        {},
+        {},
+        {},
+        {},
+        {},
+        {},
+        {},
+        {},
+        {},
+        {},
+        {},
+        {},
+        {},
+        {},
+        {},
+        {},
+        {},
+        {},
+        {},
+        {},
+        {},
+        {},
+        {},
+        {},
+        {},
+        {},
+        {},
+        {},
+        {},
+        {}
 };
 
 // Program function prototypes
@@ -62,7 +144,8 @@ int initialize();
 
 // Helper function prototypes
 char* stripNewline(char* charArr);
-char* separateArguments(char* charArr, enum ArgCase argCase);
+//char* separateArguments(char* charArr, enum ArgCase argCase); //DEPRECATED
+void separateArguments(char* args);
 
 /**
  * Program execution starts here
@@ -239,8 +322,6 @@ char* stripNewline(char* charArr) {
     return charArr;
 }
 
-
-char*
 //**********************************************************************************************************************
 /**
  * Separate arguments.
@@ -254,6 +335,7 @@ char*
  * @param structToSet If we're setting a struct, set it.
  * @return
  */
+ /*
 char* separateArguments(char* charArr, enum ArgCase argCase) {
     switch (argCase) {
         case (FIRST): {
@@ -278,7 +360,7 @@ char* separateArguments(char* charArr, enum ArgCase argCase) {
              * create <ip> <port>
              * list
              * delete <ip>
-             */
+
             for (int i=0;i<MAX_BUFFER;i++) {
 
             }
@@ -313,4 +395,27 @@ char* separateArguments(char* charArr, enum ArgCase argCase) {
     // Bad Tip: 15%
     // Pro Tip: Seg fault? Might have not returned in switch!
     return NULL;
+}
+  */
+
+void separateArguments(char* args) {
+     int startingPoint = 0;
+     // Name of directory to set in struct
+
+     for (int i=0; i<18; i++) {
+         char* dirName = malloc(MAX_BUFFER);
+
+         for (int j=startingPoint; j<MAX_BUFFER; j++) {
+             if (args[j] == '\0') {
+                 break;
+             }
+             if (args[j] == ':') {
+                 // Set starting point
+                 startingPoint = j+1;
+                 break;
+             }
+             dirName[j-startingPoint] = charArr[j];
+         }
+         // Set struct info
+         PathVars[i].DirectoryName = dirName;
 }
