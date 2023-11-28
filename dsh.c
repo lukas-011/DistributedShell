@@ -166,7 +166,7 @@ void initialize();
 char* stripNewline(char* charArr);
 //char* separateArguments(char* charArr, enum ArgCase argCase); //DEPRECATED
 void separateArguments(const char* args);
-char* separateArgumentsPATH_VAR(char* charArr);
+char* setStructForArgumentsPATH_VAR(char* charArr);
 //char* getFirstArgument(char* charArr, enum ArgCase argCase); //DEPRECATED
 void getFirstArgument(char* args);
 char* setStructForArgumentsPATH_VAR(char* charArr);
@@ -197,7 +197,7 @@ int main() {
  */
 void initialize() {
     // Set PATH struct
-    separateArgumentsPATH_VAR(getenv(STR_PATH));
+    setStructForArgumentsPATH_VAR(getenv(STR_PATH));
 }
 
 //**********************************************************************************************************************
@@ -439,7 +439,10 @@ char* setStructForArgumentsPATH_VAR(char* charArr) {
 
 }
 
-
+/**
+ * Separates arguments and sets Arguments struct
+ * @param args Character pointer with arguments to separate
+ */
 void separateArguments(const char* args) {
     char delim = ' ';
     int startingPoint = 0;
