@@ -84,15 +84,6 @@ struct PathVar PathVars[18] = {
         {}
 };
 
-/**
- * Parameters for m_agent
- */
-struct MAgentParam {
-    char* param; // create, list, delete
-    char* ip; //IP Address
-    char* port; //IP Port
-};
-
 struct MAgent {
     char* ip;
     char* port;
@@ -133,6 +124,16 @@ struct MAgent MAgents[32] = {
         {}
 };
 
+struct MCP {
+    char* local;
+    char* dest;
+};
+
+struct MRun {
+    char* mainProg;
+    char* parellelProg;
+};
+
 // Program function prototypes
 int startProc(char* procName);
 void exitShell();
@@ -145,7 +146,8 @@ int initialize();
 // Helper function prototypes
 char* stripNewline(char* charArr);
 //char* separateArguments(char* charArr, enum ArgCase argCase); //DEPRECATED
-void separateArguments(char* args);
+void separateArguments(const char* args);
+char* separateArgumentsPATH_VAR(char* charArr);
 
 //**********************************************************************************************************************
 /**
@@ -172,7 +174,7 @@ int main() {
  */
 int initialize() {
     // Set PATH struct
-    separateArguments(getenv(STR_PATH), PATH_VAR);
+    separateArgumentsPATH_VAR(getenv(STR_PATH));
 
     return 0;
 }
@@ -185,28 +187,27 @@ int initialize() {
  *
  * @return 0 if doing command was successful; 1 if failed
  */
-int doCommand(char* cmd) {
-    char* baseCmd;
 
+int doCommand(char* cmd) {
     // Remove new line from command
     cmd = stripNewline(cmd);
     //TODO: change this to its own seperate arguments
-    baseCmd = separateArguments(cmd, FIRST);
+    separateArguments(cmd);
 
     // Does the user want to exit?
-    if (strcmp(baseCmd, STR_EXIT) == 0) {
+    if (strcmp(Arguments[0].argument, STR_EXIT) == 0) {
         exitShell();
     }
     // Does the user want to run m_agent?
-    else if (strcmp(baseCmd, STR_M_AGENT) == 0) {
+    else if (strcmp(Arguments[0].argument, STR_M_AGENT) == 0) {
         doMAgent(cmd);
     }
     // Does the user want to run m_cp?
-    else if (strcmp(baseCmd, STR_M_CP) == 0) {
+    else if (strcmp(Arguments[0].argument, STR_M_CP) == 0) {
         doMCp(cmd);
     }
     // Does the user want to run m_run?
-    else if (strcmp(baseCmd, STR_M_RUN) == 0) {
+    else if (strcmp(Arguments[0].argument, STR_M_RUN) == 0) {
         doMRun(cmd);
     }
     // No matches? Try to start command
@@ -214,7 +215,6 @@ int doCommand(char* cmd) {
         startProc(cmd);
     }
 
-    free(baseCmd);
     return 0;
 }
 
@@ -223,8 +223,8 @@ int doCommand(char* cmd) {
 // PJ
 int doMAgent(char* cmd) {
     // Implement me!
-    struct MAgentParam MAgentParams[1] = { {} };
-    separateArguments(cmd, M_AGENT);
+    //struct MAgentParam MAgentParams[1] = { {} };
+    //separateArguments(cmd, M_AGENT);
     printf("m_agent goes here\n");
     // Do separate again
     return 0;
@@ -403,26 +403,28 @@ char* separateArgumentsPATH_VAR(char* charArr) {
     }
 
 }
-  */
 
-void separateArguments(char* args) {
-     int startingPoint = 0;
-     // Name of directory to set in struct
 
-     for (int i=0; i<18; i++) {
-         char* dirName = malloc(MAX_BUFFER);
+void separateArguments(const char* args) {
+    char delim = ' ';
+    int startingPoint = 0;
+    // Name of directory to set in struct
 
-         for (int j=startingPoint; j<MAX_BUFFER; j++) {
-             if (args[j] == '\0') {
-                 break;
-             }
-             if (args[j] == ':') {
-                 // Set starting point
-                 startingPoint = j+1;
-                 break;
-             }
-             dirName[j-startingPoint] = charArr[j];
-         }
-         // Set struct info
-         PathVars[i].DirectoryName = dirName;
+    for (int i = 0; i < 32; i++) {
+        char *newArg = malloc(MAX_BUFFER);
+
+        for (int j = startingPoint; j < MAX_BUFFER; j++) {
+            if (args[j] == '\0') {
+                break;
+            }
+            if (args[j] == delim) {
+                // Set starting point
+                startingPoint = j + 1;
+                break;
+            }
+            newArg[j - startingPoint] = args[j];
+        }
+        // Set struct info
+        Arguments[i].argument = newArg;
+    }
 }
