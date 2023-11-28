@@ -64,6 +64,7 @@ int initialize();
 char* stripNewline(char* charArr);
 char* separateArguments(char* charArr, enum ArgCase argCase);
 
+//**********************************************************************************************************************
 /**
  * Program execution starts here
  *
@@ -81,6 +82,7 @@ int main() {
     }
 }
 
+//**********************************************************************************************************************
 /**
  * Initialize defaults for the program
  * @return 0 on exit
@@ -92,8 +94,7 @@ int initialize() {
     return 0;
 }
 
-// kacki likes grapes
-
+//**********************************************************************************************************************
 /**
  * Determine which method to call based on user input
  *
@@ -134,6 +135,7 @@ int doCommand(char* cmd) {
     return 0;
 }
 
+//**********************************************************************************************************************
 //TODO: Not done
 // PJ
 int doMAgent(char* cmd) {
@@ -145,6 +147,7 @@ int doMAgent(char* cmd) {
     return 0;
 }
 
+//**********************************************************************************************************************
 //TODO: Not done
 // Lukas
 int doMCp(char* cmd) {
@@ -152,7 +155,7 @@ int doMCp(char* cmd) {
     printf("m_cp goes here\n");
     return 0;
 }
-
+//**********************************************************************************************************************
 //TODO: Not done
 // Anothony
 int doMRun(char* cmd) {
@@ -161,6 +164,7 @@ int doMRun(char* cmd) {
     return 0;
 }
 
+//**********************************************************************************************************************
 /**
  * Start external processes. Calls fork syscall then execve syscall.
  *
@@ -221,6 +225,7 @@ void exitShell() {
     exit(0);
 }
 
+//**********************************************************************************************************************
 /**
  * Removes trailing \\n from char array.
  *
@@ -239,8 +244,6 @@ char* stripNewline(char* charArr) {
     return charArr;
 }
 
-
-char*
 //**********************************************************************************************************************
 /**
  * Separate arguments.
@@ -254,9 +257,7 @@ char*
  * @param structToSet If we're setting a struct, set it.
  * @return
  */
-char* separateArguments(char* charArr, enum ArgCase argCase) {
-    switch (argCase) {
-        case (FIRST): {
+char* separateArgumentsFIRST(char* charArr) {
             // The goal: Get returnString to equal the first "string" in charArr
             char* returnString = malloc(sizeof(charArr));
             for (int i=0; i<MAX_BUFFER; i++) {
@@ -271,46 +272,40 @@ char* separateArguments(char* charArr, enum ArgCase argCase) {
                 returnString[i] = charArr[i];
             }
             return returnString;
+}
 
-        }
-        case (M_AGENT): {
-            /* m_agent has the following:
-             * create <ip> <port>
-             * list
-             * delete <ip>
-             */
-            for (int i=0;i<MAX_BUFFER;i++) {
 
-            }
-            break;
-        }
-        case (PATH_VAR): {
-            // TODO: We can problem improve this by iterating only for as many times as there is a ":" divider.
-            int startingPoint = 0;
-            // Name of directory to set in struct
-
-            for (int i=0; i<18; i++) {
-                char* dirName = malloc(MAX_BUFFER);
-
-                for (int j=startingPoint; j<MAX_BUFFER; j++) {
-                    if (charArr[j] == '\0') {
-                        break;
-                    }
-                    if (charArr[j] == ':') {
-                        // Set starting point
-                        startingPoint = j+1;
-                        break;
-                    }
-                    dirName[j-startingPoint] = charArr[j];
-                }
-                // Set struct info
-                PathVars[i].DirectoryName = dirName;
-            }
-
-        }
+char* separateArgumentsM_AGENT(char* charArr) {
+    /* m_agent has the following:
+    * create <ip> <port>
+    * list
+    * delete <ip>
+    */
+    for (int i=0;i<MAX_BUFFER;i++) {
 
     }
-    // Bad Tip: 15%
-    // Pro Tip: Seg fault? Might have not returned in switch!
-    return NULL;
+}
+
+char* separateArgumentsPATH_VAR(char* charArr) {
+    // TODO: We can problem improve this by iterating only for as many times as there is a ":" divider.
+    int startingPoint = 0;
+    // Name of directory to set in struct
+    for (int i=0; i<18; i++) {
+        char* dirName = malloc(MAX_BUFFER);
+
+        for (int j=startingPoint; j<MAX_BUFFER; j++) {
+            if (charArr[j] == '\0') {
+                break;
+            }
+            if (charArr[j] == ':') {
+                // Set starting point
+                startingPoint = j+1;
+                break;
+            }
+            dirName[j-startingPoint] = charArr[j];
+        }
+        // Set struct info
+        PathVars[i].DirectoryName = dirName;
+    }
+
 }
