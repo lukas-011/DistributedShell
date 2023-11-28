@@ -356,6 +356,7 @@ char* stripNewline(char* charArr) {
  *
  * @return TODO: What does this return?
  */
+ /*
 char* separateArgumentsFIRST(char* charArr) {
             // The goal: Get returnString to equal the first "string" in charArr
             char* returnString = malloc(sizeof(charArr));
@@ -372,7 +373,7 @@ char* separateArgumentsFIRST(char* charArr) {
             }
             return returnString;
 }
-
+*/
 //**********************************************************************************************************************
 /**
  * Set struct for m_agent
