@@ -6,15 +6,9 @@
 #include "constants.h"
 
 // We can use different buffer sizes to save memory
-#define BUFFER 32
+#define BUFFER_32 32
 #define CMD_BUFFER 128
-#define MAX_BUFFER 128 // Should equal whatever the biggest buffer is. Used for worst-case scenario stuff.
-
-// Exit codes
-enum ExitCode {
-    DSH_EXIT_SUCCESS,
-    DSH_EXIT_ERROR
-};
+#define MAX_BUFFER 128
 
 struct Argument {
     char* argument;
@@ -23,31 +17,7 @@ struct Argument {
 /**
  * Initialized global structs for Argument
  */
-struct Argument Arguments[32] = {
-        {},
-        {},
-        {},
-        {},
-        {},
-        {},
-        {},
-        {},
-        {},
-        {},
-        {},
-        {},
-        {},
-        {},
-        {},
-        {},
-        {},
-        {},
-        {},
-        {},
-        {},
-        {},
-        {},
-        {},
+struct Argument Arguments[8] = {
         {},
         {},
         {},
@@ -58,7 +28,6 @@ struct Argument Arguments[32] = {
         {}
 };
 
-// Structs, which can store params from input
 struct PathVar {
     char* DirectoryName;
 };
@@ -151,13 +120,14 @@ void initialize();
 
 // Helper function prototypes
 char* stripNewline(char* charArr);
-//char* separateArguments(char* charArr, enum ArgCase argCase); //DEPRECATED
 void separateArguments(const char* args);
 char* setStructForArgumentsPATH_VAR(char* charArr);
-//char* getFirstArgument(char* charArr, enum ArgCase argCase); //DEPRECATED
-void getFirstArgument(char* args);
-int setStructForM_AGENT();
-char* separateArgumentsFIRST(char* charArr);
+
+// Exit codes
+enum ExitCode {
+    DSH_EXIT_SUCCESS,
+    DSH_EXIT_ERROR
+};
 
 //**********************************************************************************************************************
 /**
@@ -196,7 +166,7 @@ void initialize() {
  *
  * @param cmd Command to run
  *
- * @return 0 if doing command was successful; 1 if failed
+ * @return DSH_EXIT_SUCCESS if doing command was successful; DSH_EXIT_ERROR if failed
  */
 int doCommand(char* cmd) {
     // Remove new line from command
@@ -223,18 +193,21 @@ int doCommand(char* cmd) {
     }
     // No matches? Try to start command
     else {
-        result = startProc(cmd);
+        result = startProc(Arguments[0].argument);
     }
 
     return result;
 }
 
 //**********************************************************************************************************************
-//TODO: Not done
+// Mostly done. Check for bugs. Probably need check for >32 agents.
 // PJ
 /**
- * @param cmd
- * @return
+ * Handler for m_agent command.\n
+ * - `m_agent create <ip> <port>` creates a new entry in the Agents struct\n
+ * - `m_agent list` lists all agents\n
+ * - `m_agent delete <ip>` deletes any entries with that ip\n
+ * @return DSH_EXIT_SUCCESS if successful, DSH_EXIT_ERROR if not
  */
 int doMAgent() {
     int index = 0; // Used to save an index after for loop
@@ -549,16 +522,16 @@ void separateArguments(const char* args) {
     int previousStartPoint = -99;
 
     // Clear old arguments
-    for (int i=0; i<32; i++) {
+    for (int i=0; i<8; i++) {
         Arguments[i].argument = NULL;
     }
-    for (int i = 0; i < 32; i++) {
+    for (int i = 0; i < 8; i++) {
         char *newArg = malloc(MAX_BUFFER);
 
         for (int j = startingPoint; j < MAX_BUFFER; j++) {
 
             if (startingPoint == previousStartPoint) {
-                i = 31;
+                i = 7;
                 break;
             }
 
