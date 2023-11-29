@@ -16,5 +16,6 @@
 
 // Long strings
 #define STR_GREETING "Welcome to the Distributed Shell!\n"
+#define STR_FAILSTART "Failed to start \"%s\"\n"
 
 #endif //DISTRIBUTEDSHELL_CONSTANTS_H

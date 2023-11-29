@@ -184,10 +184,14 @@ int main() {
     printf("%s",STR_GREETING);
 
     while(1) {
+        int result = 0;
         char userInput[CMD_BUFFER];
         printf(">");
         fgets(userInput, CMD_BUFFER, stdin);
-        doCommand(userInput);
+        result = doCommand(userInput);
+        if (result == 1) {
+            printf(STR_FAILSTART,userInput);
+        }
     }
 }
 
@@ -210,6 +214,7 @@ void initialize() {
  */
 int doCommand(char* cmd) {
     // Remove new line from command
+    int result = 0;
     cmd = stripNewline(cmd);
     //TODO: change this to its own seperate arguments
     separateArguments(cmd);
@@ -232,10 +237,10 @@ int doCommand(char* cmd) {
     }
     // No matches? Try to start command
     else {
-        startProc(cmd);
+        result = startProc(cmd);
     }
 
-    return 0;
+    return result;
 }
 
 //**********************************************************************************************************************
