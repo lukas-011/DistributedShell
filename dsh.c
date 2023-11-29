@@ -93,16 +93,6 @@ struct MAgent {
 };
 
 /**
- * Parameters for m_agent
- * Each m_agent will have a param, ip, and a port
- */
-struct MAgentParam {
-    char* param; // create, list, delete
-    char* ip; //IP Address
-    char* port; //IP Port
-};
-
-/**
  * Initialized global structs for m_agent
  */
 struct MAgent MAgents[32] = {
