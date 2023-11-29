@@ -169,8 +169,7 @@ void separateArguments(const char* args);
 char* setStructForArgumentsPATH_VAR(char* charArr);
 //char* getFirstArgument(char* charArr, enum ArgCase argCase); //DEPRECATED
 void getFirstArgument(char* args);
-char* setStructForArgumentsPATH_VAR(char* charArr);
-char* setStructForM_AGENT(char* charArr);
+int setStructForM_AGENT();
 char* separateArgumentsFIRST(char* charArr);
 
 //**********************************************************************************************************************
@@ -252,10 +251,9 @@ int doCommand(char* cmd) {
  */
 int doMAgent(char* cmd) {
     // Implement me!
-    //struct MAgentParam MAgentParams[1] = { {} };
-    //separateArguments(cmd, M_AGENT);
     printf("m_agent goes here\n");
     // Do separate again
+    setStructForM_AGENT();
     return 0;
 }
 
@@ -375,41 +373,39 @@ char* stripNewline(char* charArr) {
  *
  * @return TODO: What does this return?
  */
- /*
-char* separateArgumentsFIRST(char* charArr) {
-            // The goal: Get returnString to equal the first "string" in charArr
-            char* returnString = malloc(sizeof(charArr));
-            for (int i=0; i<MAX_BUFFER; i++) {
-                // If we reach end of string, break to avoid outta bounds
-                if (charArr[i] == '\0') {
-                    break;
-                }
-                // If we find a space, stop the count!
-                if (charArr[i] == ' ') {
-                    break;
-                }
-                returnString[i] = charArr[i];
-            }
-            return returnString;
-}
-*/
+
 //**********************************************************************************************************************
 /**
  * Set struct for m_agent
  *
  * @param charArr contains the character array for the arguments we want to set in the struct
  *
- * @return TODO: what does this return?
+ * @return 0 if successful, 1 i f error
  */
-char* setStructForM_AGENT(char* charArr) {
+int setStructForM_AGENT() {
     /* m_agent has the following:
     * create <ip> <port>
     * list
     * delete <ip>
     */
-    for (int i=0;i<MAX_BUFFER;i++) {
 
+    // Create:
+    // 1. Find first available
+    // 2. Set ip, port
+
+    if (strcmp(Arguments[1].argument, STR_CREATE) == 0) {
+        if (Arguments[2].argument == NULL || Arguments[3].argument == NULL) {
+            printf(STR_MAGENTSYNTAX);
+            return 1;
+        }
+        for (int i=0; i<31; i++) {
+            if (MAgents[i].ip == NULL) {
+                printf("Found! It's %d!\n",i);
+                break;
+            }
+        }
     }
+
 }
 
 //**********************************************************************************************************************
@@ -451,13 +447,20 @@ char* setStructForArgumentsPATH_VAR(char* charArr) {
 void separateArguments(const char* args) {
     char delim = ' ';
     int startingPoint = 0;
-    // Name of directory to set in struct
+    int previousStartPoint = -99;
 
     for (int i = 0; i < 32; i++) {
         char *newArg = malloc(MAX_BUFFER);
 
         for (int j = startingPoint; j < MAX_BUFFER; j++) {
+
+            if (startingPoint == previousStartPoint) {
+                i = 31;
+                break;
+            }
+
             if (args[j] == '\0') {
+                previousStartPoint = startingPoint;
                 break;
             }
             if (args[j] == delim) {
@@ -469,5 +472,8 @@ void separateArguments(const char* args) {
         }
         // Set struct info
         Arguments[i].argument = newArg;
+
+
+
     }
 }
