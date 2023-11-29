@@ -10,13 +10,10 @@
 #define CMD_BUFFER 128
 #define MAX_BUFFER 128 // Should equal whatever the biggest buffer is. Used for worst-case scenario stuff.
 
-// Arguments, used in separateArguments.
-enum ArgCase {
-    FIRST,
-    M_AGENT,
-    M_CP,
-    M_RUN,
-    PATH_VAR
+// Exit codes
+enum ExitCode {
+    DSH_EXIT_SUCCESS,
+    DSH_EXIT_ERROR
 };
 
 struct Argument {
@@ -157,7 +154,7 @@ struct MRun {
 int startProc(char* procName);
 void exitShell();
 int doCommand(char* cmd);
-int doMAgent(char* cmd);
+int doMAgent();
 int doMCp(char* cmd);
 int doMRun(char* cmd);
 void initialize();
@@ -183,12 +180,12 @@ int main() {
     printf("%s",STR_GREETING);
 
     while(1) {
-        int result = 0;
+        enum ExitCode result;
         char userInput[CMD_BUFFER];
         printf(">");
         fgets(userInput, CMD_BUFFER, stdin);
         result = doCommand(userInput);
-        if (result == 1) {
+        if (result == DSH_EXIT_ERROR) {
             printf(STR_FAILSTART,userInput);
         }
     }
@@ -213,7 +210,7 @@ void initialize() {
  */
 int doCommand(char* cmd) {
     // Remove new line from command
-    int result = 0;
+    enum ExitCode result = DSH_EXIT_SUCCESS;
     cmd = stripNewline(cmd);
     //TODO: change this to its own seperate arguments
     separateArguments(cmd);
@@ -224,15 +221,15 @@ int doCommand(char* cmd) {
     }
     // Does the user want to run m_agent?
     else if (strcmp(Arguments[0].argument, STR_M_AGENT) == 0) {
-        doMAgent(cmd);
+        result = doMAgent();
     }
     // Does the user want to run m_cp?
     else if (strcmp(Arguments[0].argument, STR_M_CP) == 0) {
-        doMCp(cmd);
+        result = doMCp(cmd);
     }
     // Does the user want to run m_run?
     else if (strcmp(Arguments[0].argument, STR_M_RUN) == 0) {
-        doMRun(cmd);
+        result = doMRun(cmd);
     }
     // No matches? Try to start command
     else {
@@ -249,12 +246,81 @@ int doCommand(char* cmd) {
  * @param cmd
  * @return
  */
-int doMAgent(char* cmd) {
-    // Implement me!
-    printf("m_agent goes here\n");
-    // Do separate again
-    setStructForM_AGENT();
-    return 0;
+int doMAgent() {
+    int index = 0; // Used to save an index after for loop
+    int delCount = 0; // Counts how many agents were deleted
+
+    // Check if second argument is present
+    if (Arguments[1].argument == NULL) {
+        printf(STR_MAGENT_SYNTAX);
+        return DSH_EXIT_ERROR;
+    }
+
+    // Handle create subcommand
+    if (strcmp(Arguments[1].argument, STR_CREATE) == 0) {
+
+        // If third or fourth arg is null, exit method and return error.
+        if (Arguments[2].argument == NULL || Arguments[3].argument == NULL) {
+            printf(STR_MAGENT_CREATE_SYNTAX);
+            return DSH_EXIT_ERROR;
+        }
+
+        // Set ip and port of new agent
+        for (int i=0; i<32; i++) {
+            if (MAgents[i].ip == NULL) {
+                MAgents[i].ip = Arguments[2].argument;
+                MAgents[i].port = Arguments[3].argument;
+                index = i;
+                break;
+            }
+        }
+        printf(STR_MAGENT_CREATE_SUCCESS,MAgents[index].ip,MAgents[index].port);
+        return DSH_EXIT_SUCCESS;
+    }
+
+    // Handle list subcommand
+    if (strcmp(Arguments[1].argument, STR_LIST) == 0) {
+        for (int i=0; i< 32; i++) {
+
+            //If ip isn't null, print
+            if (MAgents[i].ip != NULL) {
+                printf(STR_MAGENT_LIST, i, MAgents[i].ip, MAgents[i].port);
+                index = i+1;
+            }
+        }
+
+        // If no agents present, print message so user understands
+        if (index == 0) {
+            printf(STR_MAGENT_LIST_NONE);
+        }
+        return DSH_EXIT_SUCCESS;
+    }
+    // Handle delete subcommand
+    if (strcmp(Arguments[1].argument, STR_DELETE) == 0) {
+
+        // If third argument isn't present, exit method
+        if (Arguments[2].argument == NULL) {
+            printf(STR_MAGENT_DELETE_SYNTAX);
+            return DSH_EXIT_ERROR;
+        }
+
+        // If ip is found, delete and count
+        for (int i=0; i<32; i++) {
+            if (MAgents[i].ip != NULL) {
+                if (strcmp(Arguments[2].argument, MAgents[i].ip) == 0) {
+                    MAgents[i].ip = NULL;
+                    MAgents[i].port = NULL;
+                    delCount++;
+                }
+            }
+        }
+        printf(STR_DELETE_NUMBER, delCount);
+        return DSH_EXIT_SUCCESS;
+    }
+    else {
+        // We can print something if we want to specify the error
+        return DSH_EXIT_ERROR;
+    }
 }
 
 //**********************************************************************************************************************
@@ -389,23 +455,66 @@ int setStructForM_AGENT() {
     * delete <ip>
     */
 
-    // Create:
-    // 1. Find first available
-    // 2. Set ip, port
+    int index = 0; // Used to save an index after for loop
+    int delCount = 0; // Counts how many agents were deleted
 
+    // Check if second argument is present
+    if (Arguments[1].argument == NULL) {
+        printf(STR_MAGENT_SYNTAX);
+        return DSH_EXIT_ERROR;
+    }
+
+    // Handle create subcommand
     if (strcmp(Arguments[1].argument, STR_CREATE) == 0) {
         if (Arguments[2].argument == NULL || Arguments[3].argument == NULL) {
-            printf(STR_MAGENTSYNTAX);
-            return 1;
+            printf(STR_MAGENT_CREATE_SYNTAX);
+            return DSH_EXIT_ERROR;
         }
         for (int i=0; i<31; i++) {
             if (MAgents[i].ip == NULL) {
-                printf("Found! It's %d!\n",i);
+                MAgents[i].ip = Arguments[2].argument;
+                MAgents[i].port = Arguments[3].argument;
+                index = i;
                 break;
             }
         }
+        printf(STR_MAGENT_CREATE_SUCCESS,MAgents[index].ip,MAgents[index].port);
+        return DSH_EXIT_SUCCESS;
     }
 
+    // Handle list subcommand
+    if (strcmp(Arguments[1].argument, STR_LIST) == 0) {
+        for (int i=0; i< 32; i++) {
+            if (MAgents[i].ip != NULL) {
+                printf(STR_MAGENT_LIST, i, MAgents[i].ip, MAgents[i].port);
+                index = i+1;
+            }
+        }
+        if (index == 0) {
+            printf(STR_MAGENT_LIST_NONE);
+        }
+        return DSH_EXIT_SUCCESS;
+    }
+    // Handle delete subcommand
+    if (strcmp(Arguments[1].argument, STR_DELETE) == 0) {
+        if (Arguments[2].argument == NULL) {
+            printf(STR_MAGENT_DELETE_SYNTAX);
+            return DSH_EXIT_ERROR;
+        }
+        for (int i=0; i<32; i++) {
+            if (MAgents[i].ip != NULL) {
+                if (strcmp(Arguments[2].argument, MAgents[i].ip) == 0) {
+                    MAgents[i].ip = NULL;
+                    MAgents[i].port = NULL;
+                    delCount++;
+                }
+            }
+        }
+        printf(STR_DELETE_NUMBER, delCount);
+        return DSH_EXIT_SUCCESS;
+    }
+
+    return DSH_EXIT_ERROR;
 }
 
 //**********************************************************************************************************************
@@ -449,6 +558,10 @@ void separateArguments(const char* args) {
     int startingPoint = 0;
     int previousStartPoint = -99;
 
+    // Clear old arguments
+    for (int i=0; i<32; i++) {
+        Arguments[i].argument = NULL;
+    }
     for (int i = 0; i < 32; i++) {
         char *newArg = malloc(MAX_BUFFER);
 
