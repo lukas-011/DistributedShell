@@ -3,12 +3,14 @@
 #include <stdlib.h>
 #include <sys/wait.h>
 #include <unistd.h>
+#include <arpa/inet.h>
 #include "constants.h"
 
 // We can use different buffer sizes to save memory
 #define BUFFER_32 32
 #define CMD_BUFFER 128
 #define MAX_BUFFER 128
+#define GINORMOUS_BUFFER 4096
 
 struct Argument {
     char* argument;
@@ -122,6 +124,7 @@ void initialize();
 char* stripNewline(char* charArr);
 void separateArguments(const char* args);
 char* setStructForArgumentsPATH_VAR(char* charArr);
+char* readProgramBinary(FILE* program);
 
 // Exit codes
 enum ExitCode {
@@ -139,6 +142,10 @@ int main() {
     initialize();
     printf("%s",STR_GREETING);
 
+    // == Uncomment below to work on sending test ==
+    //readProgramBinary(fopen("/home/pj/CLionProjects/DistributedShell/test_programs/lampoil", "rb"));
+    //return 9;
+    // == End test stuff ==
     while(1) {
         enum ExitCode result;
         char userInput[CMD_BUFFER];
@@ -396,92 +403,6 @@ char* stripNewline(char* charArr) {
 
 //**********************************************************************************************************************
 /**
- * FIRST: Return the first string in the command.
- *
- * @param charArr The array to separate arguments for
- *
- * @return TODO: What does this return?
- */
-
-//**********************************************************************************************************************
-/**
- * Set struct for m_agent
- *
- * @param charArr contains the character array for the arguments we want to set in the struct
- *
- * @return 0 if successful, 1 i f error
- */
-int setStructForM_AGENT() {
-    /* m_agent has the following:
-    * create <ip> <port>
-    * list
-    * delete <ip>
-    */
-
-    int index = 0; // Used to save an index after for loop
-    int delCount = 0; // Counts how many agents were deleted
-
-    // Check if second argument is present
-    if (Arguments[1].argument == NULL) {
-        printf(STR_MAGENT_SYNTAX);
-        return DSH_EXIT_ERROR;
-    }
-
-    // Handle create subcommand
-    if (strcmp(Arguments[1].argument, STR_CREATE) == 0) {
-        if (Arguments[2].argument == NULL || Arguments[3].argument == NULL) {
-            printf(STR_MAGENT_CREATE_SYNTAX);
-            return DSH_EXIT_ERROR;
-        }
-        for (int i=0; i<31; i++) {
-            if (MAgents[i].ip == NULL) {
-                MAgents[i].ip = Arguments[2].argument;
-                MAgents[i].port = Arguments[3].argument;
-                index = i;
-                break;
-            }
-        }
-        printf(STR_MAGENT_CREATE_SUCCESS,MAgents[index].ip,MAgents[index].port);
-        return DSH_EXIT_SUCCESS;
-    }
-
-    // Handle list subcommand
-    if (strcmp(Arguments[1].argument, STR_LIST) == 0) {
-        for (int i=0; i< 32; i++) {
-            if (MAgents[i].ip != NULL) {
-                printf(STR_MAGENT_LIST, i, MAgents[i].ip, MAgents[i].port);
-                index = i+1;
-            }
-        }
-        if (index == 0) {
-            printf(STR_MAGENT_LIST_NONE);
-        }
-        return DSH_EXIT_SUCCESS;
-    }
-    // Handle delete subcommand
-    if (strcmp(Arguments[1].argument, STR_DELETE) == 0) {
-        if (Arguments[2].argument == NULL) {
-            printf(STR_MAGENT_DELETE_SYNTAX);
-            return DSH_EXIT_ERROR;
-        }
-        for (int i=0; i<32; i++) {
-            if (MAgents[i].ip != NULL) {
-                if (strcmp(Arguments[2].argument, MAgents[i].ip) == 0) {
-                    MAgents[i].ip = NULL;
-                    MAgents[i].port = NULL;
-                    delCount++;
-                }
-            }
-        }
-        printf(STR_DELETE_NUMBER, delCount);
-        return DSH_EXIT_SUCCESS;
-    }
-
-    return DSH_EXIT_ERROR;
-}
-
-//**********************************************************************************************************************
-/**
  * Set struct for PATH variable
  *
  * @param charArr contains the character array for the arguments we want to set in the struct
@@ -552,4 +473,47 @@ void separateArguments(const char* args) {
 
 
     }
+}
+
+// A lot of test stuff here that needs to be moved to its own method.
+char* readProgramBinary(FILE* program) {
+    unsigned long programSize = 0;
+    fseek(program, 0L, SEEK_END); //Seek to end of program
+    programSize = ftell(program); //Save size of program
+    rewind(program); // Go back to start of program
+    printf("Program Size: %lu\n", programSize);
+
+    char* programBuffer = malloc(programSize * sizeof(char));
+    fread(programBuffer, programSize, 1, program);
+    fclose(program); // Close the file
+    char* request = malloc(programSize+GINORMOUS_BUFFER); // Enough room for program size plus 4096
+
+    // Test code to send to agent. This should be in its own method.
+    struct sockaddr_in servaddr;
+    int sockfd;
+    sockfd = socket(AF_INET, SOCK_STREAM, 0);
+    servaddr.sin_family = AF_INET;
+    servaddr.sin_port = htons(8080);
+    servaddr.sin_addr.s_addr = inet_addr("127.0.0.1");
+
+    printf("Connecting...\n");
+    if (connect(sockfd, (struct sockaddr*) &servaddr, sizeof(servaddr)) <0) {
+        perror("No connection");
+        exit(1);
+    }
+
+    // Build the request
+    strcpy(request, "POST /transfer HTTP/1.1\r\n");
+    strcat(request, "HOST: Banana\r\n");
+    strcat(request, "programName=ProgramName&programBin=");
+    strcat(request, programBuffer);
+
+    printf("Sending...\n");
+    long n = write(sockfd, request, strlen(request));
+    if (n < 0) {perror("No write to socket"); exit(1);}
+
+    printf("Closing...\n");
+    close(sockfd);
+
+    return "beans";
 }
