@@ -10,15 +10,6 @@
 #define CMD_BUFFER 128
 #define MAX_BUFFER 128 // Should equal whatever the biggest buffer is. Used for worst-case scenario stuff.
 
-// Arguments, used in separateArguments.
-enum ArgCase {
-    FIRST,
-    M_AGENT,
-    M_CP,
-    M_RUN,
-    PATH_VAR
-};
-
 struct Argument {
     char* argument;
 };
@@ -162,6 +153,8 @@ int doMCp(char* cmd);
 int doMRun(char* cmd);
 void initialize();
 
+// TODO: also needs to implements commands ls and cat
+
 // Helper function prototypes
 char* stripNewline(char* charArr);
 //char* separateArguments(char* charArr, enum ArgCase argCase); //DEPRECATED
@@ -269,7 +262,7 @@ int doMCp(char* cmd) {
 }
 //**********************************************************************************************************************
 //TODO: Not done
-// Anothony
+// Anthony
 /**
  *
  * @param cmd
