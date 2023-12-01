@@ -6,9 +6,9 @@
 #include "constants.h"
 
 // We can use different buffer sizes to save memory
-#define BUFFER 32
+#define BUFFER_32 32
 #define CMD_BUFFER 128
-#define MAX_BUFFER 128 // Should equal whatever the biggest buffer is. Used for worst-case scenario stuff.
+#define MAX_BUFFER 128
 
 struct Argument {
     char* argument;
@@ -17,31 +17,7 @@ struct Argument {
 /**
  * Initialized global structs for Argument
  */
-struct Argument Arguments[32] = {
-        {},
-        {},
-        {},
-        {},
-        {},
-        {},
-        {},
-        {},
-        {},
-        {},
-        {},
-        {},
-        {},
-        {},
-        {},
-        {},
-        {},
-        {},
-        {},
-        {},
-        {},
-        {},
-        {},
-        {},
+struct Argument Arguments[8] = {
         {},
         {},
         {},
@@ -52,7 +28,6 @@ struct Argument Arguments[32] = {
         {}
 };
 
-// Structs, which can store params from input
 struct PathVar {
     char* DirectoryName;
 };
@@ -84,16 +59,6 @@ struct PathVar PathVars[18] = {
 struct MAgent {
     char* ip;
     char* port;
-};
-
-/**
- * Parameters for m_agent
- * Each m_agent will have a param, ip, and a port
- */
-struct MAgentParam {
-    char* param; // create, list, delete
-    char* ip; //IP Address
-    char* port; //IP Port
 };
 
 /**
@@ -148,23 +113,21 @@ struct MRun {
 int startProc(char* procName);
 void exitShell();
 int doCommand(char* cmd);
-int doMAgent(char* cmd);
+int doMAgent();
 int doMCp(char* cmd);
 int doMRun(char* cmd);
 void initialize();
 
-// TODO: also needs to implements commands ls and cat
-
 // Helper function prototypes
 char* stripNewline(char* charArr);
-//char* separateArguments(char* charArr, enum ArgCase argCase); //DEPRECATED
 void separateArguments(const char* args);
 char* setStructForArgumentsPATH_VAR(char* charArr);
-//char* getFirstArgument(char* charArr, enum ArgCase argCase); //DEPRECATED
-void getFirstArgument(char* args);
-char* setStructForArgumentsPATH_VAR(char* charArr);
-char* setStructForM_AGENT(char* charArr);
-char* separateArgumentsFIRST(char* charArr);
+
+// Exit codes
+enum ExitCode {
+    DSH_EXIT_SUCCESS,
+    DSH_EXIT_ERROR
+};
 
 //**********************************************************************************************************************
 /**
@@ -177,10 +140,14 @@ int main() {
     printf("%s",STR_GREETING);
 
     while(1) {
+        enum ExitCode result;
         char userInput[CMD_BUFFER];
         printf(">");
         fgets(userInput, CMD_BUFFER, stdin);
-        doCommand(userInput);
+        result = doCommand(userInput);
+        if (result == DSH_EXIT_ERROR) {
+            printf(STR_FAILSTART,userInput);
+        }
     }
 }
 
@@ -199,10 +166,11 @@ void initialize() {
  *
  * @param cmd Command to run
  *
- * @return 0 if doing command was successful; 1 if failed
+ * @return DSH_EXIT_SUCCESS if doing command was successful; DSH_EXIT_ERROR if failed
  */
 int doCommand(char* cmd) {
     // Remove new line from command
+    enum ExitCode result = DSH_EXIT_SUCCESS;
     cmd = stripNewline(cmd);
     //TODO: change this to its own seperate arguments
     separateArguments(cmd);
@@ -213,38 +181,109 @@ int doCommand(char* cmd) {
     }
     // Does the user want to run m_agent?
     else if (strcmp(Arguments[0].argument, STR_M_AGENT) == 0) {
-        doMAgent(cmd);
+        result = doMAgent();
     }
     // Does the user want to run m_cp?
     else if (strcmp(Arguments[0].argument, STR_M_CP) == 0) {
-        doMCp(cmd);
+        result = doMCp(cmd);
     }
     // Does the user want to run m_run?
     else if (strcmp(Arguments[0].argument, STR_M_RUN) == 0) {
-        doMRun(cmd);
+        result = doMRun(cmd);
     }
     // No matches? Try to start command
     else {
-        startProc(cmd);
+        result = startProc(Arguments[0].argument);
     }
 
-    return 0;
+    return result;
 }
 
 //**********************************************************************************************************************
-//TODO: Not done
+// Mostly done. Check for bugs. Probably need check for >32 agents.
 // PJ
 /**
- * @param cmd
- * @return
+ * Handler for m_agent command.\n
+ * - `m_agent create <ip> <port>` creates a new entry in the Agents struct\n
+ * - `m_agent list` lists all agents\n
+ * - `m_agent delete <ip>` deletes any entries with that ip\n
+ * @return DSH_EXIT_SUCCESS if successful, DSH_EXIT_ERROR if not
  */
-int doMAgent(char* cmd) {
-    // Implement me!
-    //struct MAgentParam MAgentParams[1] = { {} };
-    //separateArguments(cmd, M_AGENT);
-    printf("m_agent goes here\n");
-    // Do separate again
-    return 0;
+int doMAgent() {
+    int index = 0; // Used to save an index after for loop
+    int delCount = 0; // Counts how many agents were deleted
+
+    // Check if second argument is present
+    if (Arguments[1].argument == NULL) {
+        printf(STR_MAGENT_SYNTAX);
+        return DSH_EXIT_ERROR;
+    }
+
+    // Handle create subcommand
+    if (strcmp(Arguments[1].argument, STR_CREATE) == 0) {
+
+        // If third or fourth arg is null, exit method and return error.
+        if (Arguments[2].argument == NULL || Arguments[3].argument == NULL) {
+            printf(STR_MAGENT_CREATE_SYNTAX);
+            return DSH_EXIT_ERROR;
+        }
+
+        // Set ip and port of new agent
+        for (int i=0; i<32; i++) {
+            if (MAgents[i].ip == NULL) {
+                MAgents[i].ip = Arguments[2].argument;
+                MAgents[i].port = Arguments[3].argument;
+                index = i;
+                break;
+            }
+        }
+        printf(STR_MAGENT_CREATE_SUCCESS,MAgents[index].ip,MAgents[index].port);
+        return DSH_EXIT_SUCCESS;
+    }
+
+    // Handle list subcommand
+    if (strcmp(Arguments[1].argument, STR_LIST) == 0) {
+        for (int i=0; i< 32; i++) {
+
+            //If ip isn't null, print
+            if (MAgents[i].ip != NULL) {
+                printf(STR_MAGENT_LIST, i, MAgents[i].ip, MAgents[i].port);
+                index = i+1;
+            }
+        }
+
+        // If no agents present, print message so user understands
+        if (index == 0) {
+            printf(STR_MAGENT_LIST_NONE);
+        }
+        return DSH_EXIT_SUCCESS;
+    }
+    // Handle delete subcommand
+    if (strcmp(Arguments[1].argument, STR_DELETE) == 0) {
+
+        // If third argument isn't present, exit method
+        if (Arguments[2].argument == NULL) {
+            printf(STR_MAGENT_DELETE_SYNTAX);
+            return DSH_EXIT_ERROR;
+        }
+
+        // If ip is found, delete and count
+        for (int i=0; i<32; i++) {
+            if (MAgents[i].ip != NULL) {
+                if (strcmp(Arguments[2].argument, MAgents[i].ip) == 0) {
+                    MAgents[i].ip = NULL;
+                    MAgents[i].port = NULL;
+                    delCount++;
+                }
+            }
+        }
+        printf(STR_DELETE_NUMBER, delCount);
+        return DSH_EXIT_SUCCESS;
+    }
+    else {
+        // We can print something if we want to specify the error
+        return DSH_EXIT_ERROR;
+    }
 }
 
 //**********************************************************************************************************************
@@ -363,41 +402,82 @@ char* stripNewline(char* charArr) {
  *
  * @return TODO: What does this return?
  */
- /*
-char* separateArgumentsFIRST(char* charArr) {
-            // The goal: Get returnString to equal the first "string" in charArr
-            char* returnString = malloc(sizeof(charArr));
-            for (int i=0; i<MAX_BUFFER; i++) {
-                // If we reach end of string, break to avoid outta bounds
-                if (charArr[i] == '\0') {
-                    break;
-                }
-                // If we find a space, stop the count!
-                if (charArr[i] == ' ') {
-                    break;
-                }
-                returnString[i] = charArr[i];
-            }
-            return returnString;
-}
-*/
+
 //**********************************************************************************************************************
 /**
  * Set struct for m_agent
  *
  * @param charArr contains the character array for the arguments we want to set in the struct
  *
- * @return TODO: what does this return?
+ * @return 0 if successful, 1 i f error
  */
-char* setStructForM_AGENT(char* charArr) {
+int setStructForM_AGENT() {
     /* m_agent has the following:
     * create <ip> <port>
     * list
     * delete <ip>
     */
-    for (int i=0;i<MAX_BUFFER;i++) {
 
+    int index = 0; // Used to save an index after for loop
+    int delCount = 0; // Counts how many agents were deleted
+
+    // Check if second argument is present
+    if (Arguments[1].argument == NULL) {
+        printf(STR_MAGENT_SYNTAX);
+        return DSH_EXIT_ERROR;
     }
+
+    // Handle create subcommand
+    if (strcmp(Arguments[1].argument, STR_CREATE) == 0) {
+        if (Arguments[2].argument == NULL || Arguments[3].argument == NULL) {
+            printf(STR_MAGENT_CREATE_SYNTAX);
+            return DSH_EXIT_ERROR;
+        }
+        for (int i=0; i<31; i++) {
+            if (MAgents[i].ip == NULL) {
+                MAgents[i].ip = Arguments[2].argument;
+                MAgents[i].port = Arguments[3].argument;
+                index = i;
+                break;
+            }
+        }
+        printf(STR_MAGENT_CREATE_SUCCESS,MAgents[index].ip,MAgents[index].port);
+        return DSH_EXIT_SUCCESS;
+    }
+
+    // Handle list subcommand
+    if (strcmp(Arguments[1].argument, STR_LIST) == 0) {
+        for (int i=0; i< 32; i++) {
+            if (MAgents[i].ip != NULL) {
+                printf(STR_MAGENT_LIST, i, MAgents[i].ip, MAgents[i].port);
+                index = i+1;
+            }
+        }
+        if (index == 0) {
+            printf(STR_MAGENT_LIST_NONE);
+        }
+        return DSH_EXIT_SUCCESS;
+    }
+    // Handle delete subcommand
+    if (strcmp(Arguments[1].argument, STR_DELETE) == 0) {
+        if (Arguments[2].argument == NULL) {
+            printf(STR_MAGENT_DELETE_SYNTAX);
+            return DSH_EXIT_ERROR;
+        }
+        for (int i=0; i<32; i++) {
+            if (MAgents[i].ip != NULL) {
+                if (strcmp(Arguments[2].argument, MAgents[i].ip) == 0) {
+                    MAgents[i].ip = NULL;
+                    MAgents[i].port = NULL;
+                    delCount++;
+                }
+            }
+        }
+        printf(STR_DELETE_NUMBER, delCount);
+        return DSH_EXIT_SUCCESS;
+    }
+
+    return DSH_EXIT_ERROR;
 }
 
 //**********************************************************************************************************************
@@ -439,13 +519,24 @@ char* setStructForArgumentsPATH_VAR(char* charArr) {
 void separateArguments(const char* args) {
     char delim = ' ';
     int startingPoint = 0;
-    // Name of directory to set in struct
+    int previousStartPoint = -99;
 
-    for (int i = 0; i < 32; i++) {
+    // Clear old arguments
+    for (int i=0; i<8; i++) {
+        Arguments[i].argument = NULL;
+    }
+    for (int i = 0; i < 8; i++) {
         char *newArg = malloc(MAX_BUFFER);
 
         for (int j = startingPoint; j < MAX_BUFFER; j++) {
+
+            if (startingPoint == previousStartPoint) {
+                i = 7;
+                break;
+            }
+
             if (args[j] == '\0') {
+                previousStartPoint = startingPoint;
                 break;
             }
             if (args[j] == delim) {
@@ -457,5 +548,8 @@ void separateArguments(const char* args) {
         }
         // Set struct info
         Arguments[i].argument = newArg;
+
+
+
     }
 }
