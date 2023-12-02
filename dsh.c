@@ -548,8 +548,5 @@ void separateArguments(const char* args) {
         }
         // Set struct info
         Arguments[i].argument = newArg;
-
-
-
     }
 }
