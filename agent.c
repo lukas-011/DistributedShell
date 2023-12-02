@@ -4,6 +4,7 @@
 #include <arpa/inet.h>
 #include <stdlib.h>
 #include <unistd.h>
+#include <malloc.h>
 
 #define BUFFER_SMALL 32
 #define BUFFER_LARGE 128
@@ -16,8 +17,15 @@
  * @param parallelProg - The parallel program
  * @param contentsOfParallelProg - The contents of the parallel program
  */
-void transfer(const char* parallelProg, void* contentsOfParallelProg) {
+void transfer(const char* parallelProg, char* contentsOfParallelProg) {
     printf("'Transfer' API Endpoint\n");
+    FILE* writeProg = fopen("/home/pj/WRITE_TEST/testProgram", "w");
+    unsigned long programSize = malloc_usable_size(contentsOfParallelProg);
+    // Write the contents of programBuffer,
+    // of which each element is of size char,
+    // of which is the total size programSize
+    // to a file writeProg
+    fwrite(contentsOfParallelProg, sizeof(char), programSize, writeProg);
 }
 
 //TODO: Verify these parameters AND THEIR TYPES
@@ -50,10 +58,14 @@ void run(const char* parallelProg, const char* n) {
      // Start param length + 1 for equal sign
      int startingPoint = strlen(param)+1;
      for (int i=startingPoint; i<strlen(line); i++) {
+
+
         if (line[i] == '&' || line[i] == '\0' || line[i] == '\n') {
             // We found the end in one form or another so let's break outta here
             break;
         }
+
+
         value[i-startingPoint] = line[i];
      }
      return value;
@@ -118,6 +130,11 @@ int main(void) {
         else if (strstr(buffer, "POST /testWithParams")) {
             char* value = parseRequest(strstr(buffer, "POST /testWithParams"),PARAM_TESTKEY);
             testWithParams(value);
+        }
+        else if (strstr(buffer, "POST /transfer")) {
+            char* programName = parseRequest(strstr(buffer, "POST /transfer"), "programName");
+            char* programBin = parseRequest(strstr(buffer, "POST /transfer"), "programBin");
+            transfer(programName, programBin);
         }
     }
 
