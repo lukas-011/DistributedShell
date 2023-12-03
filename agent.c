@@ -120,7 +120,7 @@ int main(void) {
 
     // Receive data from the client
     ssize_t bytes_received;
-    while ((bytes_received = recv(client_socket, buffer, 1024, 0)) >0) {
+    while ((bytes_received = read(client_socket, buffer, 1024)) >0) {
         buffer[bytes_received] = '\0'; // Null-terminate the received data
         printf("Received from client: \n%s", buffer);
 
