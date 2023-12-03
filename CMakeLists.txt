@@ -3,4 +3,6 @@ project(DistributedShell C)
 
 set(CMAKE_C_STANDARD 11)
 
-add_executable(DistributedShell dsh.c)
+add_executable(DistributedShell dsh.c
+        base64.c)
+#add_executable(DistributedShell agent.c)

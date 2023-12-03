@@ -5,6 +5,7 @@
 #include <stdlib.h>
 #include <unistd.h>
 #include <malloc.h>
+#include "base64.h"
 
 #define BUFFER_SMALL 32
 #define BUFFER_LARGE 128
