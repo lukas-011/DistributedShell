@@ -12,7 +12,6 @@
 #define BUFFER_GINORMOUS 256000
 #define PARAM_TESTKEY "testKey"
 
-//TODO: Verify these parameters AND THEIR TYPES
 /**
  * The agent will receive the contents of the parallel program, store it on the filesystem, and compile it.
  * @param parallelProg - The parallel program
@@ -31,7 +30,6 @@ void transfer(const char* parallelProg, char* contentsOfParallelProg) {
     fwrite(contentsBin, sizeof(char), programSize, writeProg); // Write to local filesystem
 }
 
-//TODO: Verify these parameters AND THEIR TYPES
 /**
  * The agent will run the program using the number n as its single argument. Any output of the compiled program will
  * be returned to the distributed shell.

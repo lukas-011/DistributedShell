@@ -117,8 +117,8 @@ int startProc(char* procName);
 void exitShell();
 int doCommand(char* cmd);
 int doMAgent();
-int doMCp(char* cmd);
-int doMRun(char* cmd);
+int doMCp();
+int doMRun();
 void initialize();
 
 // Helper function prototypes
@@ -144,8 +144,8 @@ int main() {
     printf("%s",STR_GREETING);
 
     // == Uncomment below to work on sending test ==
-    readProgramBinary(fopen("/home/pj/CLionProjects/DistributedShell/test_programs/lampoil", "rb"));
-    return 9;
+    //readProgramBinary(fopen("/home/pj/CLionProjects/DistributedShell/test_programs/lampoil", "rb"));
+    //return 9;
     // == End test stuff ==
     while(1) {
         enum ExitCode result;
@@ -154,7 +154,7 @@ int main() {
         fgets(userInput, CMD_BUFFER, stdin);
         result = doCommand(userInput);
         if (result == DSH_EXIT_ERROR) {
-            printf(STR_FAILSTART,userInput);
+            printf(STR_FAILSTART, userInput);
         }
     }
 }
@@ -180,7 +180,6 @@ int doCommand(char* cmd) {
     // Remove new line from command
     enum ExitCode result = DSH_EXIT_SUCCESS;
     cmd = stripNewline(cmd);
-    //TODO: change this to its own seperate arguments
     separateArguments(cmd);
 
     // Does the user want to exit?
@@ -193,11 +192,11 @@ int doCommand(char* cmd) {
     }
     // Does the user want to run m_cp?
     else if (strcmp(Arguments[0].argument, STR_M_CP) == 0) {
-        result = doMCp(cmd);
+        result = doMCp();
     }
     // Does the user want to run m_run?
     else if (strcmp(Arguments[0].argument, STR_M_RUN) == 0) {
-        result = doMRun(cmd);
+        result = doMRun();
     }
     // No matches? Try to start command
     else {
@@ -298,26 +297,51 @@ int doMAgent() {
 //TODO: Not done
 // Lukas
 /**
- *
- * @param cmd
- * @return
+ * Copies a local file using the name provided in dest. The copy
+ * is made to the filesystem server and the number of partitions is
+ * equal to the number of agents that were created.
+ * @Syntax m_cp local dest
+ * @returns DSH_EXIT_ERROR if doMCp has errors and DSH_EXIT_SUCCESS if process successful
  */
-int doMCp(char* cmd) {
-    // Implement me!
-    printf("m_cp goes here\n");
-    return 0;
+int doMCp() {
+    // Get the arguments that the user inputted from the arguments struct
+    char* local = Arguments[0].argument; // First should be local which is the source file that needs to be copied
+    char* dest = Arguments[0].argument; // Next should be dest which is the destination of the local file
+
+    // Get the local file from the provided destination as a binary because we are sending it over the internet
+    FILE* file = fopen(local, "rb");
+
+    // Check if the file exists
+    if(file == NULL){
+        printf("\nError: could not open file");
+        return DSH_EXIT_ERROR;
+    }
+
+    // Copy the contents of the file to a variable
+
+    // allocate memory for the string
+    fseek(file, 0L, SEEK_END);
+    unsigned long lengthOfFile = ftell(file);
+
+    char* contents = malloc(lengthOfFile * sizeof(char));
+    //fputs(const char *);
+
+    // Send the file to all existing agents
+
+    // close the file and return DSH success
+    fclose(file);
+    return DSH_EXIT_SUCCESS;
 }
 //**********************************************************************************************************************
 //TODO: Not done
 // Anthony
 /**
- *
- * @param cmd
- * @return
+ * Main program is ran locally with parallel program being sent to each agent that exists
+ * @Syntax m_run mainProg parallelProg
+ * @returns DSH_EXIT_ERROR if doMCp has errors and DSH_EXIT_SUCCESS if process successful
  */
-int doMRun(char* cmd) {
-    // Implement me!
-    printf("m_run goes here\n");
+int doMRun() {
+
     return 0;
 }
 
@@ -474,9 +498,10 @@ void separateArguments(const char* args) {
 }
 
 
-
+//**********************************************************************************************************************
 // A lot of test stuff here that needs to be moved to its own method.
 char* readProgramBinary(FILE* program) {
+
     unsigned long programSize = 0;
     fseek(program, 0L, SEEK_END); //Seek to end of program
     programSize = ftell(program); //Save size of program
@@ -532,4 +557,3 @@ char* readProgramBinary(FILE* program) {
 
     return "beans";
 }
-
