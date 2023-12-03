@@ -324,7 +324,7 @@ int doMCp() {
     unsigned long lengthOfFile = ftell(file);
 
     char* contents = malloc(lengthOfFile * sizeof(char));
-    fputs(const char *)
+    //fputs(const char *);
 
     // Send the file to all existing agents
 
