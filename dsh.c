@@ -144,8 +144,8 @@ int main() {
     printf("%s",STR_GREETING);
 
     // == Uncomment below to work on sending test ==
-    //readProgramBinary(fopen("/home/pj/CLionProjects/DistributedShell/test_programs/lampoil", "rb"));
-    //return 9;
+    readProgramBinary(fopen("/home/pj/CLionProjects/DistributedShell/test_programs/lampoil", "rb"));
+    return 9;
     // == End test stuff ==
     while(1) {
         enum ExitCode result;
@@ -492,6 +492,10 @@ char* readProgramBinary(FILE* program) {
     char* programBuffer = malloc(programSize * sizeof(char));
     fread(programBuffer, programSize, 1, program);
     fclose(program); // Close the file
+    char* tickle = base64_encode("bombs");
+    printf("Look: %s", tickle);
+
+
     char* request = malloc(programSize+GINORMOUS_BUFFER); // Enough room for program size plus 4096
 
     // Test code to send to agent. This should be in its own method.
