@@ -5,6 +5,7 @@
 #include <unistd.h>
 #include <arpa/inet.h>
 #include "constants.h"
+#include "base64.h"
 
 // We can use different buffer sizes to save memory
 #define BUFFER_32 32
@@ -153,8 +154,9 @@ int main() {
         fgets(userInput, CMD_BUFFER, stdin);
         result = doCommand(userInput);
         if (result == DSH_EXIT_ERROR) {
-            printf(STR_FAILSTART,userInput);
+            printf(STR_FAILSTART, userInput);
         }
+
     }
 }
 
@@ -179,7 +181,6 @@ int doCommand(char* cmd) {
     // Remove new line from command
     enum ExitCode result = DSH_EXIT_SUCCESS;
     cmd = stripNewline(cmd);
-    //TODO: change this to its own seperate arguments
     separateArguments(cmd);
 
     // Does the user want to exit?
@@ -302,7 +303,7 @@ int doMAgent() {
  * @return
  */
 int doMCp(char* cmd) {
-    // Implement me!
+
     printf("m_cp goes here\n");
     return 0;
 }
@@ -471,9 +472,17 @@ void separateArguments(const char* args) {
         Arguments[i].argument = newArg;
     }
 }
+//**********************************************************************************************************************
+/**
+ * @param contents The contents of our program that we are going to convert to base64
+ * @return base64 encoded char*
+ */
 
+
+//**********************************************************************************************************************
 // A lot of test stuff here that needs to be moved to its own method.
 char* readProgramBinary(FILE* program) {
+
     unsigned long programSize = 0;
     fseek(program, 0L, SEEK_END); //Seek to end of program
     programSize = ftell(program); //Save size of program

@@ -5,13 +5,13 @@
 #include <stdlib.h>
 #include <unistd.h>
 #include <malloc.h>
+#include "base64.h"
 
 #define BUFFER_SMALL 32
 #define BUFFER_LARGE 128
 #define BUFFER_GINORMOUS 1024
 #define PARAM_TESTKEY "testKey"
 
-//TODO: Verify these parameters AND THEIR TYPES
 /**
  * The agent will receive the contents of the parallel program, store it on the filesystem, and compile it.
  * @param parallelProg - The parallel program
@@ -19,7 +19,7 @@
  */
 void transfer(const char* parallelProg, char* contentsOfParallelProg) {
     printf("'Transfer' API Endpoint\n");
-    FILE* writeProg = fopen("/home/pj/WRITE_TEST/testProgram", "w");
+    FILE* writeProg = fopen("/home/ClionProjects/DistributedShell/test", "w");
     unsigned long programSize = malloc_usable_size(contentsOfParallelProg);
     // Write the contents of programBuffer,
     // of which each element is of size char,
@@ -28,7 +28,6 @@ void transfer(const char* parallelProg, char* contentsOfParallelProg) {
     fwrite(contentsOfParallelProg, sizeof(char), programSize, writeProg);
 }
 
-//TODO: Verify these parameters AND THEIR TYPES
 /**
  * The agent will run the program using the number n as its single argument. Any output of the compiled program will
  * be returned to the distributed shell.
