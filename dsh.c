@@ -5,7 +5,7 @@
 #include <unistd.h>
 #include <arpa/inet.h>
 #include "constants.h"
-#include "base64.h"
+#include "binToText.h"
 
 // We can use different buffer sizes to save memory
 #define BUFFER_32 32
@@ -126,8 +126,6 @@ char* stripNewline(char* charArr);
 void separateArguments(const char* args);
 char* setStructForArgumentsPATH_VAR(char* charArr);
 char* readProgramBinary(FILE* program);
-char* encodeBinary(const char* binary, unsigned long length);
-char* decodeBinary(const char* encodedBinary, unsigned long length);
 
 // Exit codes
 enum ExitCode {
@@ -475,68 +473,7 @@ void separateArguments(const char* args) {
     }
 }
 
-/**
- * Encodes a binary into text
- * @param binary - A char* containing hexadecimal
- * @param length - The size of the binary
- * @return An ASCII representation of the hexadecimal
- */
-char* encodeBinary(const char* binary, unsigned long length) {
 
-    char* newText = malloc(2*(length * (sizeof(char)))); // The buffer is the size of the program * 2 characters each
-    for (unsigned long i = 0; i < length; i++) {
-        for (int j=0; j<256;j++) {
-            if (binary[i] == HEXVALS[j]) {
-                sprintf(newText, "%s%02X", newText, j);
-                break;
-                //printf("Index Encode: %lu\n", i);
-            }
-            else {
-                if (j == 255) {
-                    printf("OH NO\n");
-                }
-
-            }
-        }
-    }
-    //newText[length] = '\0';
-
-    return newText;
-}
-
-/**
- * Decodes hexadecimal text into true hexadecimal
- * @param encodedBinary - An ASCII representation of hexadecimal
- * @param length - The length of the binary
- * @return A buffer containing the hexadecimal for a binary program
- */
-char* decodeBinary(const char* encodedBinary, unsigned long length) {
-    //printf("Encode: %s", encodedBinary);
-    printf("\nDecode: ");
-    char* newBinary = malloc(length * sizeof(char));
-    unsigned long indexToSetBit = 0;
-
-    for (unsigned long i=0; i<length*2;i+=2) {
-        char encodedTest[2] = {encodedBinary[i], encodedBinary[i+1]};
-        for (int j=0; j<256;j++) {
-            char* compareChar = malloc(2);
-            sprintf(compareChar, "%02X", j);
-            if ((compareChar[0] == encodedTest[0]) && (compareChar[1] == encodedTest[1])) {
-                newBinary[indexToSetBit] = HEXVALS[j];
-                printf("%s", compareChar);
-                //printf("Index Decode: %lu\n", indexToSetBit);
-                //printf("%c%c\n%s\n----\n", encodedTest[0], encodedTest[1], compareChar);
-                break;
-            }
-
-
-            free(compareChar);
-        }
-        indexToSetBit++;
-    }
-    //newBinary[length] = '\0';
-    return newBinary;
-}
 
 // A lot of test stuff here that needs to be moved to its own method.
 char* readProgramBinary(FILE* program) {
@@ -554,7 +491,6 @@ char* readProgramBinary(FILE* program) {
     char* tickle = bombs;
     printf("Encoding program...\n");
     char* progAscii = encodeBinary(programBuffer, programSize);
-    printf("Encode: %s", progAscii);
 
     //printf("Decoding program...\n");
     char* progBin = decodeBinary(progAscii, programSize);
@@ -565,11 +501,7 @@ char* readProgramBinary(FILE* program) {
     // of which is the total size programSize
     // to a file writeProg
     fwrite(progBin, sizeof(char), programSize, writeProg);
-
-    if (strcmp(progBin, programBuffer) == 0) {printf("\n\nThey're equal\n");}
-
-    char* request = malloc(programSize+GINORMOUS_BUFFER); // Enough room for program size plus 4096
-
+    char* request = malloc(programSize*2+GINORMOUS_BUFFER); // Enough room for program ascii plus 4096
     // Test code to send to agent. This should be in its own method.
     struct sockaddr_in servaddr;
     int sockfd;
@@ -585,13 +517,13 @@ char* readProgramBinary(FILE* program) {
     }
 
     // Build the request
-    //strcpy(request, "POST /transfer HTTP/1.1\r\n");
-    //strcat(request, "HOST: Banana\r\n");
-    //strcat(request, "programName=ProgramName&programBin=");
-    //strcat(request, programBuffer);
+    strcpy(request, "POST /transfer HTTP/1.1\r\n");
+    strcat(request, "HOST: Banana\r\n");
+    strcat(request, "programName=ProgramName&programBin=");
+    strcat(request, progAscii);
 
     printf("Sending...\n");
-    long endpoint = write(sockfd, "POST /transfer", strlen(request));
+    long endpoint = write(sockfd, request, strlen(request));
     if (endpoint < 0) {perror("No write endpoint to socket"); exit(1);}
 
 

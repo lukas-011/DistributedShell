@@ -5,11 +5,11 @@
 #include <stdlib.h>
 #include <unistd.h>
 #include <malloc.h>
-#include "base64.h"
+#include "binToText.h"
 
 #define BUFFER_SMALL 32
 #define BUFFER_LARGE 128
-#define BUFFER_GINORMOUS 1024
+#define BUFFER_GINORMOUS 256000
 #define PARAM_TESTKEY "testKey"
 
 //TODO: Verify these parameters AND THEIR TYPES
@@ -19,14 +19,16 @@
  * @param contentsOfParallelProg - The contents of the parallel program
  */
 void transfer(const char* parallelProg, char* contentsOfParallelProg) {
-    printf("'Transfer' API Endpoint\n");
-    FILE* writeProg = fopen("/home/pj/WRITE_TEST/testProgram", "w");
-    unsigned long programSize = malloc_usable_size(contentsOfParallelProg);
+
+    // TODO: What do we save files as? (Name and location?)
+    FILE* writeProg = fopen("/home/pj/WRITE_TEST/testProgramAgent", "w");
+    unsigned long programSize = strlen(contentsOfParallelProg)/2; // Size of the program
+    char* contentsBin = decodeBinary(contentsOfParallelProg, programSize); // Get the binary
     // Write the contents of programBuffer,
     // of which each element is of size char,
     // of which is the total size programSize
     // to a file writeProg
-    fwrite(contentsOfParallelProg, sizeof(char), programSize, writeProg);
+    fwrite(contentsBin, sizeof(char), programSize, writeProg); // Write to local filesystem
 }
 
 //TODO: Verify these parameters AND THEIR TYPES
@@ -85,7 +87,7 @@ int main(void) {
     int server_socket, client_socket;
     struct sockaddr_in server_address, client_address;
     socklen_t client_address_len = sizeof(client_address);
-    char buffer[1024];
+    char buffer[BUFFER_GINORMOUS];
 
     // Create socket
     if ((server_socket = socket(AF_INET, SOCK_STREAM, 0)) == -1) {
@@ -120,9 +122,9 @@ int main(void) {
 
     // Receive data from the client
     ssize_t bytes_received;
-    while ((bytes_received = read(client_socket, buffer, 1024)) >0) {
+    while ((bytes_received = read(client_socket, buffer, BUFFER_GINORMOUS)) >0) {
         buffer[bytes_received] = '\0'; // Null-terminate the received data
-        printf("Received from client: \n%s", buffer);
+        //printf("Received from client: \n%s", buffer);
 
         // Check if request is for API endpoint
         if (strstr(buffer, "GET /test") != NULL) {
