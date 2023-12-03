@@ -5,7 +5,7 @@
 #include <unistd.h>
 #include <arpa/inet.h>
 #include "constants.h"
-#include "base64.h"
+#include "binToText.h"
 
 // We can use different buffer sizes to save memory
 #define BUFFER_32 32
@@ -156,7 +156,6 @@ int main() {
         if (result == DSH_EXIT_ERROR) {
             printf(STR_FAILSTART, userInput);
         }
-
     }
 }
 
@@ -353,8 +352,9 @@ int doMRun() {
  * @return 0 if starting process was successful; 1 if not.
  */
 int startProc(char* procName) {
-    // TODO: Lukas
+    // TODO: Check if file exists
     // TODO: Implement running commands from PATH variable.
+    // TODO: Add support for arguments
     int runProc = 0; // Should we attempt to start the new process?
 
     // First, see if the provided input points to a file that exists:
@@ -496,11 +496,6 @@ void separateArguments(const char* args) {
         Arguments[i].argument = newArg;
     }
 }
-//**********************************************************************************************************************
-/**
- * @param contents The contents of our program that we are going to convert to base64
- * @return base64 encoded char*
- */
 
 
 //**********************************************************************************************************************
@@ -516,12 +511,22 @@ char* readProgramBinary(FILE* program) {
     char* programBuffer = malloc(programSize * sizeof(char));
     fread(programBuffer, programSize, 1, program);
     fclose(program); // Close the file
-    char* tickle = base64_encode("bombs");
-    printf("Look: %s", tickle);
 
+    char bombs[3] = {0x00, 0x01, 0x02};
+    char* tickle = bombs;
+    printf("Encoding program...\n");
+    char* progAscii = encodeBinary(programBuffer, programSize);
 
-    char* request = malloc(programSize+GINORMOUS_BUFFER); // Enough room for program size plus 4096
+    //printf("Decoding program...\n");
+    char* progBin = decodeBinary(progAscii, programSize);
 
+    FILE* writeProg = fopen("/home/pj/WRITE_TEST/testProgram", "w");
+    // Write the contents of programBuffer,
+    // of which each element is of size char,
+    // of which is the total size programSize
+    // to a file writeProg
+    fwrite(progBin, sizeof(char), programSize, writeProg);
+    char* request = malloc(programSize*2+GINORMOUS_BUFFER); // Enough room for program ascii plus 4096
     // Test code to send to agent. This should be in its own method.
     struct sockaddr_in servaddr;
     int sockfd;
@@ -540,11 +545,12 @@ char* readProgramBinary(FILE* program) {
     strcpy(request, "POST /transfer HTTP/1.1\r\n");
     strcat(request, "HOST: Banana\r\n");
     strcat(request, "programName=ProgramName&programBin=");
-    strcat(request, programBuffer);
+    strcat(request, progAscii);
 
     printf("Sending...\n");
-    long n = write(sockfd, request, strlen(request));
-    if (n < 0) {perror("No write to socket"); exit(1);}
+    long endpoint = write(sockfd, request, strlen(request));
+    if (endpoint < 0) {perror("No write endpoint to socket"); exit(1);}
+
 
     printf("Closing...\n");
     close(sockfd);
