@@ -8,6 +8,7 @@
 #include "binToText.h"
 
 #define BUFFER_SMALL 32
+#define BUFFER_MID 64
 #define BUFFER_LARGE 128
 #define BUFFER_GINORMOUS 256000
 #define PARAM_TESTKEY "testKey"
@@ -20,7 +21,9 @@
 void transfer(const char* parallelProg, char* contentsOfParallelProg) {
 
     // TODO: What do we save files as? (Name and location?)
-    FILE* writeProg = fopen("/home/pj/WRITE_TEST/testProgramAgent", "w");
+    char* writeLocation = malloc(BUFFER_MID);
+    sprintf(writeLocation, "/home/pj/WRITE_TEST/%s", parallelProg);
+    FILE* writeProg = fopen(writeLocation, "w");
     unsigned long programSize = strlen(contentsOfParallelProg)/2; // Size of the program
     char* contentsBin = decodeBinary(contentsOfParallelProg, programSize); // Get the binary
     // Write the contents of programBuffer,
@@ -124,15 +127,7 @@ int main(void) {
         buffer[bytes_received] = '\0'; // Null-terminate the received data
         //printf("Received from client: \n%s", buffer);
 
-        // Check if request is for API endpoint
-        if (strstr(buffer, "GET /test") != NULL) {
-            test();
-        }
-        else if (strstr(buffer, "POST /testWithParams")) {
-            char* value = parseRequest(strstr(buffer, "POST /testWithParams"),PARAM_TESTKEY);
-            testWithParams(value);
-        }
-        else if (strstr(buffer, "POST /transfer")) {
+        if (strstr(buffer, "POST /transfer")) {
             char* programName = parseRequest(strstr(buffer, "POST /transfer"), "programName");
             char* programBin = parseRequest(strstr(buffer, "POST /transfer"), "programBin");
             transfer(programName, programBin);

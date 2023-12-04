@@ -8,7 +8,8 @@
 #include "binToText.h"
 
 // We can use different buffer sizes to save memory
-#define BUFFER_32 32
+#define SMALL_BUFFER 32
+#define MID_BUFFER 64
 #define CMD_BUFFER 128
 #define MAX_BUFFER 128
 #define GINORMOUS_BUFFER 4096
@@ -112,6 +113,15 @@ struct MRun {
     char* parellelProg;
 };
 
+struct sendRequestParam {
+    const char* programName;
+    const char* programAscii;
+    const char* n;
+    const char* ip;
+    const int port;
+};
+
+
 // Program function prototypes
 int startProc(char* procName);
 void exitShell();
@@ -125,7 +135,10 @@ void initialize();
 char* stripNewline(char* charArr);
 void separateArguments(const char* args);
 char* setStructForArgumentsPATH_VAR(char* charArr);
-char* readProgramBinary(FILE* program);
+int sendProgram(const char* programName, FILE* program, const char* ip, const int port);
+unsigned long getProgramSize(FILE* program);
+int sendRequest(char* requestType, char* endpoint, struct sendRequestParam reqParams);
+char* saveProgramToBuffer(FILE* program, unsigned long programSize);
 
 // Exit codes
 enum ExitCode {
@@ -144,8 +157,11 @@ int main() {
     printf("%s",STR_GREETING);
 
     // == Uncomment below to work on sending test ==
-    //readProgramBinary(fopen("/home/pj/CLionProjects/DistributedShell/test_programs/lampoil", "rb"));
-    //return 9;
+    sendProgram("lampoil",
+                fopen("/home/pj/CLionProjects/DistributedShell/test_programs/lampoil", "rb"),
+                "127.0.0.1",
+                8080);
+    return 9;
     // == End test stuff ==
     while(1) {
         enum ExitCode result;
@@ -497,37 +513,56 @@ void separateArguments(const char* args) {
     }
 }
 
-
-//**********************************************************************************************************************
-// A lot of test stuff here that needs to be moved to its own method.
-char* readProgramBinary(FILE* program) {
-
-    unsigned long programSize = 0;
+/**
+ * Gets the size of a program
+ * @param program Program to get size from
+ * @return Size, in bytes of the program
+ */
+unsigned long getProgramSize(FILE* program) {
+    unsigned long programSize;
     fseek(program, 0L, SEEK_END); //Seek to end of program
     programSize = ftell(program); //Save size of program
     rewind(program); // Go back to start of program
-    printf("Program Size: %lu\n", programSize);
+    return programSize;
+}
 
+/**
+ * Saves a program to a char* buffer.
+ * @param program The program to save
+ * @param programSize The size of the program
+ * @return char* containing the program
+ */
+char* saveProgramToBuffer(FILE* program, unsigned long programSize) {
     char* programBuffer = malloc(programSize * sizeof(char));
     fread(programBuffer, programSize, 1, program);
     fclose(program); // Close the file
+    return programBuffer;
+}
 
-    char bombs[3] = {0x00, 0x01, 0x02};
-    char* tickle = bombs;
-    printf("Encoding program...\n");
-    char* progAscii = encodeBinary(programBuffer, programSize);
+/**
+ * Sends a request to a socket
+ * @param requestType The type of request, probably POST
+ * @param endpoint The endpoint to hit on the agent
+ * @param reqParams Parameters to send in the request.
+ * @return DSH_EXIT_SUCCESS if successful, DSH_EXIT_ERROR if not
+ */
+int sendRequest(char* requestType, char* endpoint, struct sendRequestParam reqParams) {
 
-    //printf("Decoding program...\n");
-    char* progBin = decodeBinary(progAscii, programSize);
+    const char* progName = reqParams.programName;
+    const char* progAscii = reqParams.programAscii;
+    const char* n = reqParams.n;
+    int progSize;
 
-    FILE* writeProg = fopen("/home/pj/WRITE_TEST/testProgram", "w");
-    // Write the contents of programBuffer,
-    // of which each element is of size char,
-    // of which is the total size programSize
-    // to a file writeProg
-    fwrite(progBin, sizeof(char), programSize, writeProg);
-    char* request = malloc(programSize*2+GINORMOUS_BUFFER); // Enough room for program ascii plus 4096
-    // Test code to send to agent. This should be in its own method.
+    if (progAscii != NULL) {
+        progSize = strlen(progAscii)/2;
+    }
+    else {
+        progSize = 0;
+    }
+
+    char* request = malloc((progSize*2)+GINORMOUS_BUFFER); // Enough room for program ascii plus 4096
+
+    // Based on client example
     struct sockaddr_in servaddr;
     int sockfd;
     sockfd = socket(AF_INET, SOCK_STREAM, 0);
@@ -535,25 +570,66 @@ char* readProgramBinary(FILE* program) {
     servaddr.sin_port = htons(8080);
     servaddr.sin_addr.s_addr = inet_addr("127.0.0.1");
 
-    printf("Connecting...\n");
     if (connect(sockfd, (struct sockaddr*) &servaddr, sizeof(servaddr)) <0) {
         perror("No connection");
-        exit(1);
+        return DSH_EXIT_ERROR;
     }
 
+    // Allocate request lines and fill out the lines
+    char* reqLineHeader = malloc(MID_BUFFER);
+    char* reqLineHost = malloc(MID_BUFFER);
+    char* reqLineContentType = malloc(MID_BUFFER);
+    char* reqLineCount = malloc(MID_BUFFER);
+    char* reqLineParams = malloc(MID_BUFFER);
+
+    sprintf(reqLineHeader, "%s /%s HTTP/1.1\r\n", requestType, endpoint);
+    sprintf(reqLineHost, "HOST: %s\r\n", getenv(STR_HOST));
+    sprintf(reqLineContentType, "Content-Type: application/x-www-form-urlencoded\r\n");
+    if (reqParams.programName != NULL) {
+        sprintf(reqLineParams, "programName=%s",progName);
+    }
+    if (reqParams.programAscii != NULL) {
+        sprintf(reqLineParams, "%s&programBin=%s",reqLineParams, progAscii);
+    }
+    if (reqParams.n != NULL) {
+        sprintf(reqLineParams, "%s&argument=%s", reqLineParams, n);
+    }
+    sprintf(reqLineCount, "Content-Length: %lu\r\n\r\n", strlen(reqLineParams));
+
+
     // Build the request
-    strcpy(request, "POST /transfer HTTP/1.1\r\n");
-    strcat(request, "HOST: Banana\r\n");
-    strcat(request, "programName=ProgramName&programBin=");
-    strcat(request, progAscii);
+    strcpy(request, reqLineHeader);
+    strcat(request, reqLineHost);
+    strcat(request, reqLineContentType);
+    strcat(request, reqLineCount);
+    strcat(request, reqLineParams);
 
-    printf("Sending...\n");
-    long endpoint = write(sockfd, request, strlen(request));
-    if (endpoint < 0) {perror("No write endpoint to socket"); exit(1);}
+    long connection = write(sockfd, request, strlen(request));
+    if (connection < 0) {perror("Couldn't write to socket"); return DSH_EXIT_ERROR;}
 
-
-    printf("Closing...\n");
     close(sockfd);
+    return DSH_EXIT_SUCCESS;
+}
 
-    return "beans";
+//**********************************************************************************************************************
+/**
+ * Sends a program to a socket.
+ * @param programName Name of the program
+ * @param program The program itself
+ * @param ip IP address to send to
+ * @param port PORT to send to
+ * @return DSH_EXIT_SUCCESS if successful, DSH_EXIT_ERROR if not
+ */
+int sendProgram(const char* programName, FILE* program, const char* ip, const int port) {
+
+    unsigned long programSize = getProgramSize(program); // Get size of the program
+    char* programBuffer = saveProgramToBuffer(program, programSize); // Save program to char*
+    char* progAscii = encodeBinary(programBuffer, programSize); // Encode program in ASCII for embedding
+
+    struct sendRequestParam params = {programName, progAscii, NULL, ip, port};
+    if (sendRequest(HTTP_POST, "transfer", params) != 0) {
+        return DSH_EXIT_ERROR;
+    }
+
+    return DSH_EXIT_SUCCESS;
 }
