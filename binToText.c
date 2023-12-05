@@ -3,7 +3,7 @@
 #include "constants.h"
 #include <malloc.h>
 /**
- * Encodes a binary into text
+ * Encodes a binary into text. Make sure to free
  * @param binary - A char* containing hexadecimal
  * @param length - The size of the binary
  * @return An ASCII representation of the hexadecimal
