@@ -11,7 +11,7 @@
 // We can use different buffer sizes to save memory
 #define SMALL_BUFFER 32
 #define MID_BUFFER 64
-#define CMD_BUFFER 128
+#define CMD_BUFFER 1024
 #define MAX_BUFFER 128
 #define GINORMOUS_BUFFER 4096
 
@@ -343,6 +343,7 @@ int doMCp() {
     // Return DSH success
     return DSH_EXIT_SUCCESS;
 }
+
 //**********************************************************************************************************************
 
 void* waitForResponseFromAgents(void* args) {
@@ -434,7 +435,7 @@ int doMRun() {
     char *parallelProg = Arguments[2].argument;
 
     // Open file to send to agents
-    FILE* file = fopen(parallelProg, "rb");
+    FILE* file = fopen(parallelProg, "r");
 
     // If file is null, print an error and return DSH_EXIT_ERROR
     if(file == NULL){
