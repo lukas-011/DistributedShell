@@ -4,6 +4,7 @@
 #include <sys/wait.h>
 #include <unistd.h>
 #include <arpa/inet.h>
+#include <pthread.h>
 #include "constants.h"
 #include "binToText.h"
 
@@ -140,6 +141,7 @@ unsigned long getProgramSize(FILE* program);
 int sendRequest(char* requestType, char* endpoint, struct sendRequestParam reqParams);
 char* saveProgramToBuffer(FILE* program, unsigned long programSize);
 char* readTextToBuffer(FILE* program);
+void* waitForResponsFromAgents(void* arg);
 
 // Exit codes
 enum ExitCode {
@@ -338,18 +340,29 @@ int doMCp() {
     return DSH_EXIT_SUCCESS;
 }
 //**********************************************************************************************************************
-//TODO: DONE?
-// Anthony
+void* waitForResponseFromAgents(void* args){
+    int numAgents = *((int*)&args);
+    for(int i = 0; i == numAgents; i++){
+
+    }
+    return NULL;
+}
 /**
  * Main program is ran locally with parallel program being sent to each agent that exists
  * @Syntax m_run mainProg parallelProg
  * @returns DSH_EXIT_ERROR if doMCp has errors and DSH_EXIT_SUCCESS if process successful
  */
 int doMRun() {
-    //runs locally
+    // create a thread that will monitor for responses
+    pthread_t thread;
+
+    // Argument for the thread to know how many responses we are waiting for to continue
+    int numAgents = 0;
+
+    // Runs locally
     char *mainProg = Arguments[1].argument;
 
-    //sent out to each agent.
+    // Sent out to each agent
     char *parallelProg = Arguments[2].argument;
 
     // Open file to send to agents
@@ -361,18 +374,15 @@ int doMRun() {
         return DSH_EXIT_ERROR;
     }
 
-    // Set off mainProg to wait for each agent to finish responding
-        int pid = fork();
-        int status = -99;
-        // Parent
-        if (pid > 0) {
-            waitpid(pid, &status, 0);
+    // Get count for the number of agents we have so we know how many responses we need
+    for(int i =0; i < 32; i++) {
+        if ((MAgents[i].ip != NULL) || (MAgents[i].port != NULL)) {
+            numAgents = numAgents++;
         }
-        // Child
-        else {
-            execve(mainProg, NULL, NULL);
-            exit(0);
-        }
+    }
+
+    // Start thread to wait for responses
+    pthread_create(&thread, NULL, waitForResponsFromAgents, (void*)&numAgents);
 
     // Distribute the parallel program amongst the existing agents
     for(int i =0; i < 32; i++) {
@@ -382,6 +392,8 @@ int doMRun() {
         }
     }
 
+    // Wait for all responses before continuing
+    pthread_join(thread, NULL);
 
     // Close the file
     fclose(file);
@@ -499,6 +511,7 @@ char* setStructForArgumentsPATH_VAR(char* charArr) {
 
 }
 
+//**********************************************************************************************************************
 /**
  * Separates arguments and sets Arguments struct
  * @param args Character pointer with arguments to separate
@@ -538,6 +551,7 @@ void separateArguments(const char* args) {
     }
 }
 
+//**********************************************************************************************************************
 /**
  * Gets the size of a program
  * @param program Program to get size from
@@ -551,6 +565,7 @@ unsigned long getProgramSize(FILE* program) {
     return programSize;
 }
 
+//**********************************************************************************************************************
 /**
  * Saves a program to a char* buffer.
  * @param program The program to save
@@ -564,6 +579,7 @@ char* saveProgramToBuffer(FILE* program, unsigned long programSize) {
     return programBuffer;
 }
 
+//**********************************************************************************************************************
 char* readTextToBuffer(FILE* programSrc) {
     char* newText = malloc(GINORMOUS_BUFFER);
     char c;
@@ -578,6 +594,7 @@ char* readTextToBuffer(FILE* programSrc) {
     return newText;
 }
 
+//**********************************************************************************************************************
 char* getWordFromString(char* word, int pos) {
     int indexCounter = 0;
     int setChars = 0;
@@ -599,6 +616,7 @@ char* getWordFromString(char* word, int pos) {
     return newWord;
 }
 
+//**********************************************************************************************************************
 char* getEverythingAfter(char* word, int pos) {
     int indexCounter = 0;
     int setChars = 0;
@@ -620,6 +638,7 @@ char* getEverythingAfter(char* word, int pos) {
     return newWord;
 }
 
+//**********************************************************************************************************************
 /**
  * Sends a request to a socket
  * @param requestType The type of request, probably POST
