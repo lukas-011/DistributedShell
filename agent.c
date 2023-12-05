@@ -23,10 +23,12 @@ char* saveLocation;
 struct threadArgs {
     char* programName;
     char* programSrc;
+    char* n;
 };
 
 // Threads
-pthread_t transferThread, runThread;
+pthread_t threads[4];
+int threadIndexes[4];
 
 /**
  * The agent will receive the contents of the parallel program, store it on the filesystem, and compile it.
@@ -37,13 +39,10 @@ void* transfer(void* arg) {
     struct threadArgs* ta = ((struct threadArgs*) arg);
     char* parallelProg = ta->programName;
     char* contentsOfParallelProg = ta->programSrc;
-    printf("Look!\n\n%s\n-----\n%s", parallelProg, contentsOfParallelProg);
-
 
     // TODO: What do we save files as? (Name and location?)
     // TODO: Check if directory exists before writing to avoid SEGFAULT
     char* writeLocation = malloc(BUFFER_LARGE);
-    printf("%s/%s\n", saveLocation, parallelProg);
     sprintf( writeLocation,"%s/%s", saveLocation, parallelProg);
     FILE* writeFile = fopen(writeLocation, "w");
     unsigned long programLength = strlen(contentsOfParallelProg); // Size of the program
@@ -61,9 +60,36 @@ void* transfer(void* arg) {
  * @param parallelProg The parallel program
  * @param n The argument for the program
  */
-void run(const char* parallelProg, const char* n) {
-    printf("Run Endpoint\n");
+void* run(void* arg) {
 
+    struct threadArgs* ta = ((struct threadArgs*) arg);
+
+    char* parallelProg = ta->programName;
+    char* n = ta->n;
+
+    char *compileCommand = malloc(BUFFER_LARGE);
+    strcat(compileCommand, "gcc -o ");
+    strcat(compileCommand, saveLocation);
+    strcat(compileCommand, "/");
+    strcat(compileCommand, parallelProg);
+    strcat(compileCommand, " ");
+    strcat(compileCommand, saveLocation);
+    strcat(compileCommand, "/");
+    strcat(compileCommand, parallelProg);
+    strcat(compileCommand, ".c");
+    int compileResult = system(compileCommand);
+    if(compileResult == 0){
+//        All good
+    }else{
+//        Uh oh
+    }
+    char *runProg = malloc(BUFFER_LARGE);
+    strcat(runProg, saveLocation);
+    strcat(runProg, "/");
+    strcat(runProg, parallelProg);
+    strcat(runProg, " ");
+    strcat(runProg, n);
+    system(runProg);
 }
 
  /**
@@ -91,6 +117,66 @@ void run(const char* parallelProg, const char* n) {
      }
      return value;
  }
+
+ char* getWordFromString(char* word, int pos) {
+     int indexCounter = 0;
+     int setChars = 0;
+     char* newWord = malloc(BUFFER_SMALL);
+     for (int i=0; i< strlen(word);i++) {
+         if (indexCounter == pos-1) {
+             setChars = 1;
+         }
+         if (word[i] == '\0' || word[i] == ' ') {
+             indexCounter++;
+             if (indexCounter == pos) {
+                 break;
+             }
+
+         }
+         if (setChars == 1) {sprintf(newWord, "%s%c", newWord, word[i]);}
+
+     }
+     return newWord;
+ }
+
+char* getEverythingAfter(char* word, int pos) {
+    int indexCounter = 0;
+    int setChars = 0;
+    char* newWord = malloc(BUFFER_GINORMOUS);
+    for (int i=0; i< strlen(word);i++) {
+        if (indexCounter == pos - 1) {
+            setChars = 1;
+        }
+        if (word[i] == ' ') {
+            indexCounter++;
+        } else if (word[i] == '\0') {
+            break;
+        }
+
+
+        if (setChars == 1) { sprintf(newWord, "%s%c", newWord, word[i]); }
+    }
+
+    return newWord;
+}
+
+/**
+ * Removes trailing \\n from char array.
+ *
+ * @param charArray Character array to strip \\n from
+ *
+ * @return The stripped char array
+ */
+char* stripNewline(char* charArr) {
+    for (int i=0; i<BUFFER_MID; i++) {
+        if (charArr[i] == '\n') {
+            charArr[i] = '\0';
+            break;
+        }
+    }
+
+    return charArr;
+}
 
 /**
  * Listens for requests and calls the required endpoint.
@@ -141,21 +227,43 @@ int main(void) {
     // Receive data from the client
     ssize_t bytes_received;
     while ((bytes_received = read(client_socket, buffer, BUFFER_GINORMOUS)) >0) {
+        int started = 0;
+        int threadToStart;
         buffer[bytes_received] = '\0'; // Null-terminate the received data
-        //printf("Received from client: \n%s", buffer);
+        printf("Received:\n-----\n%s", buffer);
 
-        if (strstr(buffer, "POST /transfer")) {
+        // Determine which thread to start
+        for (int i=0;i<4;i++) {
+            if (i+1 == 4) {
+                threadToStart = threadIndexes[3];
+            }
+            else if (threadIndexes[i+1] == 0) {
+                threadToStart = threadIndexes[i];
+            }
+        }
 
-            char* programName = parseRequest(strstr(buffer, "POST /transfer"), "programName");
-            char* programBin = parseRequest(strstr(buffer, "POST /transfer"), "programSrc");
+        if (strstr(buffer, "transfer")) {
+            started = 1;
+            char* programName = stripNewline(getWordFromString(buffer, 2));
+            char* programSrc = malloc(BUFFER_GINORMOUS);
+            programSrc = getEverythingAfter(buffer, 3);
 
             struct threadArgs ta;
             ta.programName = programName;
-            ta.programSrc = programBin;
-            pthread_create(&transferThread, NULL, (void*) transfer, &ta);
-            //transfer(programName, programBin);
+            ta.programSrc = programSrc;
+            pthread_create(&threads[threadToStart], NULL, (void*) transfer, &ta);
         }
-        pthread_join(transferThread, NULL);
+        else if (strstr(buffer, "run")) {
+            started = 1;
+            char* parallelProg = stripNewline(getWordFromString(buffer, 2));
+            char* n = stripNewline(getWordFromString(buffer, 3));
+            struct threadArgs ta;
+            ta.programName = parallelProg;
+            ta.n = n;
+            pthread_create(&threads[threadToStart], NULL, (void*) run, &ta);
+        }
+        if (started == 1) {pthread_join(threads[threadToStart], NULL);}
+
     }
 
     if (bytes_received == -1) {
