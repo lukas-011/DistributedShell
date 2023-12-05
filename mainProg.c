@@ -14,7 +14,10 @@
 #define BUFFER_GINORMOUS 256000
 
 int main(int argc, char* argv[]) {
-    printf("I have %s rubies.\n",argv[1]);
+    for (int i=1; i<argc; i++ ){
+        printf("I have %s rubies.\n",argv[i]);
+    }
+
 }
 
 

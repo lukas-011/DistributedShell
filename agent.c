@@ -71,7 +71,7 @@ void* run(void* arg) {
     char* parallelProg = ta->programName;
     char* n = ta->n;
 
-    char* compileCommand = malloc(BUFFER_XLARGE+1);
+    char* compileCommand = calloc(sizeof(char), BUFFER_XLARGE+1);
     strcat(compileCommand, "gcc -o ");
     strcat(compileCommand, saveLocation);
     strcat(compileCommand, "/");
@@ -123,6 +123,7 @@ char* parseRequest(const char* request, const char* param) {
 
         value[i-startingPoint] = line[i];
     }
+    free(line); //Not Tested
     return value;
 }
 
@@ -219,6 +220,9 @@ int sendRequest(char* endpoint, char* sendRequestParam) {
     if (connection < 0) {perror("Couldn't write to socket"); return 1;}
 
     close(sockfd);
+
+    free(param1);
+    free(request);
     return 0;
 }
 

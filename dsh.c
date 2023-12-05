@@ -125,7 +125,7 @@ struct sendRequestParam {
 
 struct arg {
     int numAgents;
-    char** returnVal;
+    int* returnVals;
 };
 
 
@@ -360,7 +360,10 @@ void* waitForResponseFromAgents(void* args) {
 
         struct arg* threadArgs = (struct arg*) args;
         int numAgents = threadArgs->numAgents;
-        char** returnValue = threadArgs->returnVal;
+        int* returnVals = threadArgs->returnVals;
+
+
+
         int server_socket, client_socket;
         struct sockaddr_in server_address, client_address;
         socklen_t client_address_len = sizeof(client_address);
@@ -404,7 +407,7 @@ void* waitForResponseFromAgents(void* args) {
 
             buffer[bytes_received] = '\0'; // Null-terminate the received data
             //printf("Received:\n-----\n%s", buffer);
-            *returnValue = getWordFromString(buffer, 2);
+
 
             if (strstr(buffer, "m_run_listener")) {
                 char *param = stripNewline(getWordFromString(buffer, 2));
@@ -414,6 +417,7 @@ void* waitForResponseFromAgents(void* args) {
                 printf("Agent will be closed on disconnect.\n");
             }
             numReceived++;
+            returnVals[numReceived-1] = atoi((getWordFromString(buffer, 2)));
 
 
             if (bytes_received == -1) {
@@ -475,8 +479,9 @@ int doMRun() {
     }
 
 
-    char* returnVal = malloc(sizeof(char)*2);
-    struct arg args = { numAgents,  &returnVal};
+    //char* returnVal = malloc(sizeof(char)*2);
+    int returnVals[32];
+    struct arg args = { numAgents,  returnVals};
 
     // Start thread to wait for responses
     pthread_create(&thread, NULL, (void*) waitForResponseFromAgents, (void*)&args);
@@ -501,14 +506,22 @@ int doMRun() {
     // Wait for all responses before continuing
     pthread_join(thread, NULL);
 
+    for (int i=0; i < numAgents; i++) {
+        printf("It's the %d!!!!!", returnVals[i]);
+    }
+
     // Close the file
     fclose(file);
 
     char* runLocal = malloc(XLARGE_BUFFER);
     strcpy(runLocal, mainProg);
     for (int i=0; i<numAgents; i++) {
+        char returnValC = (returnVals[i] + '0');
+        char* returnValArg = malloc(sizeof(char));
+        sprintf(returnValArg, "%c", returnValC);
         strcat(runLocal, " ");
-        strcat(runLocal, returnVal);
+        strcat(runLocal, returnValArg);
+        free(returnValArg);
     }
     system(runLocal);
     free(runLocal);
