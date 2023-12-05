@@ -17,7 +17,9 @@
 // CONFIGURATION (Must this be settable at run time?)
 #define SAVE_LOCATION "/dshAgentBin" // Will be set to home dir/dshAgentBin (/home/userName/dshAgentBin)
 
-// TODO: Do we need to run transfer and run on threads?
+// Prototypes
+int sendRequest(char* endpoint, char* sendRequestParam);
+
 // Global variables
 char* saveLocation;
 struct threadArgs {
@@ -79,9 +81,9 @@ void* run(void* arg) {
     strcat(compileCommand, ".c");
     int compileResult = system(compileCommand);
     if(compileResult == 0){
-//        All good
+        // All good
     }else{
-//        Uh oh
+            //Uh oh
     }
     char *runProg = malloc(BUFFER_LARGE);
     strcat(runProg, saveLocation);
@@ -89,7 +91,14 @@ void* run(void* arg) {
     strcat(runProg, parallelProg);
     strcat(runProg, " ");
     strcat(runProg, n);
-    system(runProg);
+    int result = system(runProg);
+
+    char* paramToSend = malloc(1);
+    sprintf(paramToSend,"%d",result);
+    sendRequest("M_RunListener",paramToSend);
+    free(paramToSend);
+
+    return NULL;
 }
 
  /**
@@ -176,6 +185,42 @@ char* stripNewline(char* charArr) {
     }
 
     return charArr;
+}
+/**
+ * Sends a request to a socket
+ * @param requestType The type of request, probably POST
+ * @param endpoint The endpoint to hit on the agent
+ * @param sendRequestParam The param to be sent.
+ * @return DSH_EXIT_SUCCESS if successful, DSH_EXIT_ERROR if not
+ */
+int sendRequest(char* endpoint, char* sendRequestParam) {
+
+    char* param1 = malloc(BUFFER_LARGE);
+    strcpy(param1, sendRequestParam);
+
+    char* request = malloc(BUFFER_GINORMOUS); // 4096
+
+    // Based on client example
+    struct sockaddr_in servaddr;
+    int sockfd;
+    sockfd = socket(AF_INET, SOCK_STREAM, 0);
+    servaddr.sin_family = AF_INET;
+    servaddr.sin_port = htons(8081);
+    servaddr.sin_addr.s_addr = inet_addr("127.0.0.1");
+
+    if (connect(sockfd, (struct sockaddr*) &servaddr, sizeof(servaddr)) <0) {
+        perror("No connection");
+        return 1;
+    }
+    strcpy(request, endpoint);
+    strcat(request, " ");
+    strcat(request, param1);
+
+    long connection = write(sockfd, request, strlen(request));
+    if (connection < 0) {perror("Couldn't write to socket"); return 1;}
+
+    close(sockfd);
+    return 0;
 }
 
 /**
