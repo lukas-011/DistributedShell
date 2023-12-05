@@ -157,11 +157,11 @@ int main() {
     printf("%s",STR_GREETING);
 
     // == Uncomment below to work on sending test ==
-    sendProgram("lampoil",
-                fopen("/home/pj/CLionProjects/DistributedShell/test_programs/lampoil", "rb"),
-                "127.0.0.1",
-                8080);
-    return 9;
+    //sendProgram("lampoil",
+    //            fopen("/home/pj/CLionProjects/DistributedShell/test_programs/lampoil", "rb"),
+    //            "127.0.0.1",
+    //            8080);
+    //return 9;
     // == End test stuff ==
     while(1) {
         enum ExitCode result;
@@ -416,7 +416,7 @@ int startProc(char* procName) {
         }
             // Child
         else {
-            //execve(procName, NULL, NULL);
+            execve(procName, NULL, NULL);
             exit(0);
         }
         return 0;
