@@ -13,6 +13,7 @@
 #define CMD_BUFFER 128
 #define MAX_BUFFER 128
 #define GINORMOUS_BUFFER 4096
+#define CHUNK_SIZE 512
 
 struct Argument {
     char* argument;
@@ -124,6 +125,7 @@ struct sendRequestParam {
 
 // Program function prototypes
 int startProc(char* procName);
+int startProcLocally(char* procName);
 void exitShell();
 int doCommand(char* cmd);
 int doMAgent();
@@ -334,35 +336,10 @@ int doMCp() {
         return DSH_EXIT_ERROR;
     }
 
-    // Copy the contents of the file to a variable
-    // allocate memory for the string
-    fseek(file, 0L, SEEK_END);
-    unsigned long lengthOfFile = ftell(file);
-    fseek(file, 0, SEEK_SET);
-
-    // Allocate memory to store the contents of our file to a string
-    char* contents = (char*)malloc(lengthOfFile + 1);
-
-    // Check if the contents are null
-    if(contents == NULL){
-        fclose(file);
-        printf("\nERROR: No contents in the file");
-        return DSH_EXIT_ERROR;
-    }
-
-    // Copy the contents of the file to the string and then add a '\0' to signify the end of the file
-    fread(contents, 1, lengthOfFile, file);
-    contents[lengthOfFile] = '\0';
-
-    // close the file since we are done with it
-    fclose(file);
-
-    // Send the contents over to the filesystem server depending on how many agents there are
+    // Send file to file system server
     for(int i = 0; i < 32; i++) {
-        // check if there is an agent by checking for exiting ip and port for each agent
         if(MAgents[i].ip != NULL || MAgents[i].port != NULL) {
-            // TODO: what does program name have to be
-            struct sendRequestParam copyRequest = {local, contents, n, MAgents[i].ip, MAgents[i].port};
+            sendProgram(local, file, "127.0.0.1", 1050);
         }
     }
 
@@ -370,7 +347,7 @@ int doMCp() {
     return DSH_EXIT_SUCCESS;
 }
 //**********************************************************************************************************************
-//TODO: Not done
+//TODO: DONE?
 // Anthony
 /**
  * Main program is ran locally with parallel program being sent to each agent that exists
@@ -384,46 +361,30 @@ int doMRun() {
     //sent out to each agent.
     char *parallelProg = Arguments[2].argument;
 
+    // Open file to send to agents
     FILE* file = fopen(parallelProg, "rb");
 
-    // Check if the file exists
+    // If file is null, print an error and return DSH_EXIT_ERROR
     if(file == NULL){
-        printf("\nError: could not open file\n");
+        printf("\nERROR: could not open file\n");
         return DSH_EXIT_ERROR;
     }
 
-    // Copy the contents of the file to a variable
-    // allocate memory for the string
-    fseek(file, 0L, SEEK_END);
-    unsigned long lengthOfFile = ftell(file);
-    fseek(file, 0, SEEK_SET);
-
-    // Allocate memory to store the contents of our file to a string
-    char* contents = (char*)malloc(lengthOfFile + 1);
-
-    // Check if the contents are null
-    if(contents == NULL){
-        fclose(file);
-        printf("\nERROR: No contents in the file");
-        return DSH_EXIT_ERROR;
-    }
-
-    // Copy the contents of the file to the string and then add a '\0' to signify the end of the file
-    fread(contents, 1, lengthOfFile, file);
-    contents[lengthOfFile] = '\0';
-
-    // Start the main process locally
-    startProc(mainProg);
+    // Set off mainProg to wait for each agent to finish responding
 
     // Distribute the parallel program amongst the existing agents
     for(int i =0; i < 32; i++) {
         if ((MAgents[i].ip != NULL) || (MAgents[i].port != NULL)) {
-            // Set struct to send
-            struct sendRequestParam parallelStruct = {parallelProg, contents, n, MAgents[i].ip, MAgents[i].port};
             // Send the parallel programs
-
+            sendProgram("parallelProgram", file, MAgents[i].ip, atoi(MAgents[i].port));
         }
     }
+
+
+    // Close the file
+    fclose(file);
+
+    // return a success
     return DSH_EXIT_SUCCESS;
 }
 
@@ -434,9 +395,6 @@ int doMRun() {
  * @return 0 if starting process was successful; 1 if not.
  */
 int startProc(char* procName) {
-    // TODO: Check if file exists
-    // TODO: Implement running commands from PATH variable.
-    // TODO: Add support for arguments
     int runProc = 0; // Should we attempt to start the new process?
 
     // First, see if the provided input points to a file that exists:
@@ -480,7 +438,6 @@ int startProc(char* procName) {
     }
 
 }
-
 //**********************************************************************************************************************
 /**
  * Exits the dsh shell.
