@@ -11,6 +11,7 @@
 #define BUFFER_SMALL 32
 #define BUFFER_MID 64
 #define BUFFER_LARGE 128
+#define BUFFER_XLARGE 1024
 #define BUFFER_GINORMOUS 256000
 
 
@@ -53,6 +54,7 @@ void* transfer(void* arg) {
     // of which is the total size programSize
     // to a file writeProg
     fwrite(contentsOfParallelProg, sizeof(char), programLength, writeFile); // Write to local filesystem
+    fclose(writeFile);
     return NULL;
 }
 
@@ -69,7 +71,7 @@ void* run(void* arg) {
     char* parallelProg = ta->programName;
     char* n = ta->n;
 
-    char *compileCommand = malloc(BUFFER_LARGE);
+    char* compileCommand = malloc(BUFFER_XLARGE+1);
     strcat(compileCommand, "gcc -o ");
     strcat(compileCommand, saveLocation);
     strcat(compileCommand, "/");
@@ -79,13 +81,10 @@ void* run(void* arg) {
     strcat(compileCommand, "/");
     strcat(compileCommand, parallelProg);
     strcat(compileCommand, ".c");
+    strcat(compileCommand, "\0");
     int compileResult = system(compileCommand);
-    if(compileResult == 0){
-        // All good
-    }else{
-            //Uh oh
-    }
-    char *runProg = malloc(BUFFER_LARGE);
+
+    char* runProg = malloc(BUFFER_XLARGE);
     strcat(runProg, saveLocation);
     strcat(runProg, "/");
     strcat(runProg, parallelProg);
@@ -93,11 +92,11 @@ void* run(void* arg) {
     strcat(runProg, n);
     int result = system(runProg);
 
-    char* paramToSend = malloc(1);
+    char* paramToSend = malloc(sizeof(char)*2);
     sprintf(paramToSend,"%d",result);
     sendRequest("m_run_listener",paramToSend);
-    free(paramToSend);
 
+    // TODO: Fix issue where it can't run on the second time through
     return NULL;
 }
 
@@ -130,7 +129,7 @@ void* run(void* arg) {
  char* getWordFromString(char* word, int pos) {
      int indexCounter = 0;
      int setChars = 0;
-     char* newWord = malloc(BUFFER_SMALL);
+     char* newWord = malloc(BUFFER_XLARGE);
      for (int i=0; i< strlen(word);i++) {
          if (indexCounter == pos-1) {
              setChars = 1;
@@ -164,6 +163,7 @@ char* getEverythingAfter(char* word, int pos) {
 
 
         if (setChars == 1) { sprintf(newWord, "%s%c", newWord, word[i]); }
+        //newWord[strlen(newWord)] = '\0';
     }
 
     return newWord;
@@ -197,7 +197,6 @@ int sendRequest(char* endpoint, char* sendRequestParam) {
 
     char* param1 = malloc(BUFFER_LARGE);
     strcpy(param1, sendRequestParam);
-
     char* request = malloc(BUFFER_GINORMOUS); // 4096
 
     // Based on client example
@@ -229,94 +228,104 @@ int sendRequest(char* endpoint, char* sendRequestParam) {
  * @return EXIT_FAILURE if an error occured, or EXIT_SUCCESS if closed gracefully.
  */
 int main(void) {
+    int doConnect = 1;
     saveLocation = malloc(BUFFER_LARGE);
     strcpy(saveLocation, getenv(("HOME")));
     strcat(saveLocation, SAVE_LOCATION);
     printf("DSH Agent\n");
-    int server_socket, client_socket;
-    struct sockaddr_in server_address, client_address;
-    socklen_t client_address_len = sizeof(client_address);
-    char buffer[BUFFER_GINORMOUS];
+    while (doConnect) {
 
-    // Create socket
-    if ((server_socket = socket(AF_INET, SOCK_STREAM, 0)) == -1) {
-        perror("Socket creation failed");
-        exit(EXIT_FAILURE);
-    }
+        printf("Waiting for connection...\n");
+        int server_socket, client_socket;
+        struct sockaddr_in server_address, client_address;
+        socklen_t client_address_len = sizeof(client_address);
+        char buffer[BUFFER_GINORMOUS];
 
-    // Initialize server_address structure
-    server_address.sin_family = AF_INET;
-    server_address.sin_addr.s_addr = INADDR_ANY;
-    server_address.sin_port = htons(8080);
+        // Create socket
+        if ((server_socket = socket(AF_INET, SOCK_STREAM, 0)) == -1) {
+            perror("Socket creation failed");
+            exit(EXIT_FAILURE);
+        }
 
-    // Bind socket
-    if (bind(server_socket, (struct sockaddr*) &server_address, sizeof (server_address)) == -1) {
-        perror("Socket binding failed");
-        exit(EXIT_FAILURE);
-    }
+        // Initialize server_address structure
+        server_address.sin_family = AF_INET;
+        server_address.sin_addr.s_addr = INADDR_ANY;
+        server_address.sin_port = htons(8080);
 
-    // Listen for incoming connections
-    if (listen(server_socket, 5) == -1) {
-        perror("Socket listening failed");
-        exit(EXIT_FAILURE);
-    }
+        // Bind socket
+        if (bind(server_socket, (struct sockaddr *) &server_address, sizeof(server_address)) == -1) {
+            perror("Socket binding failed");
+            exit(EXIT_FAILURE);
+        }
 
-    // Accept incoming connections
-    if ((client_socket = accept(server_socket, (struct sockaddr*)&client_address, &client_address_len)) == -1) {
-        perror("Connection acceptance failed");
-        exit(EXIT_FAILURE);
-    }
+        // Listen for incoming connections
+        if (listen(server_socket, 5) == -1) {
+            perror("Socket listening failed");
+            exit(EXIT_FAILURE);
+        }
 
-    printf("Client connected: %s\n", inet_ntoa(client_address.sin_addr));
+        // Accept incoming connections
+        if ((client_socket = accept(server_socket, (struct sockaddr *) &client_address, &client_address_len)) == -1) {
+            perror("Connection acceptance failed");
+            exit(EXIT_FAILURE);
+        }
 
-    // Receive data from the client
-    ssize_t bytes_received;
-    while ((bytes_received = read(client_socket, buffer, BUFFER_GINORMOUS)) >0) {
-        int started = 0;
-        int threadToStart;
-        buffer[bytes_received] = '\0'; // Null-terminate the received data
-        printf("Received:\n-----\n%s", buffer);
+        printf("Client connected: %s\n", inet_ntoa(client_address.sin_addr));
 
-        // Determine which thread to start
-        for (int i=0;i<4;i++) {
-            if (i+1 == 4) {
-                threadToStart = threadIndexes[3];
+        // Receive data from the client
+        ssize_t bytes_received;
+        while ((bytes_received = read(client_socket, buffer, BUFFER_GINORMOUS)) > 0) {
+            int started = 0;
+            int threadToStart;
+            buffer[bytes_received] = '\0'; // Null-terminate the received data
+            printf("Received:\n-----\n%s", buffer);
+
+            // Determine which thread to start
+            for (int i = 0; i < 4; i++) {
+                if (i + 1 == 4) {
+                    threadToStart = threadIndexes[3];
+                } else if (threadIndexes[i + 1] == 0) {
+                    threadToStart = threadIndexes[i];
+                }
             }
-            else if (threadIndexes[i+1] == 0) {
-                threadToStart = threadIndexes[i];
+            char** param1;
+            char** param2;
+            if (strstr(buffer, "transfer")) {
+                started = 1;
+                char* programName = stripNewline(getWordFromString(buffer, 2));
+                char* programSrc = getEverythingAfter(buffer, 3);
+
+                struct threadArgs ta;
+                ta.programName = programName;
+                ta.programSrc = programSrc;
+                pthread_create(&threads[threadToStart], NULL, (void *) transfer, &ta);
+
+            } else if (strstr(buffer, "run")) {
+                started = 1;
+                char* parallelProg = stripNewline(getWordFromString(buffer, 2));
+                char* n = stripNewline(getWordFromString(buffer, 3));
+                struct threadArgs ta;
+                ta.programName = parallelProg;
+                ta.n = n;
+                pthread_create(&threads[threadToStart], NULL, (void *) run, &ta);
             }
+            else if (strstr(buffer, "closeAgent")) {
+                doConnect = 0;
+                printf("Agent will be closed on disconnect.\n");
+            }
+            if (started == 1) {
+                pthread_join(threads[threadToStart], NULL);
+            }
+
         }
 
-        if (strstr(buffer, "transfer")) {
-            started = 1;
-            char* programName = stripNewline(getWordFromString(buffer, 2));
-            char* programSrc = malloc(BUFFER_GINORMOUS);
-            programSrc = getEverythingAfter(buffer, 3);
-
-            struct threadArgs ta;
-            ta.programName = programName;
-            ta.programSrc = programSrc;
-            pthread_create(&threads[threadToStart], NULL, (void*) transfer, &ta);
+        if (bytes_received == -1) {
+            perror("Error receiving data");
+            exit(EXIT_FAILURE);
         }
-        else if (strstr(buffer, "run")) {
-            started = 1;
-            char* parallelProg = stripNewline(getWordFromString(buffer, 2));
-            char* n = stripNewline(getWordFromString(buffer, 3));
-            struct threadArgs ta;
-            ta.programName = parallelProg;
-            ta.n = n;
-            pthread_create(&threads[threadToStart], NULL, (void*) run, &ta);
-        }
-        if (started == 1) {pthread_join(threads[threadToStart], NULL);}
 
+        // Close sockets
+        close(client_socket);
+        close(server_socket);
     }
-
-    if (bytes_received == -1) {
-        perror("Error receiving data");
-        exit(EXIT_FAILURE);
-    }
-
-    // Close sockets
-    close(client_socket);
-    close(server_socket);
 }

@@ -137,6 +137,7 @@ char* stripNewline(char* charArr);
 void separateArguments(const char* args);
 char* setStructForArgumentsPATH_VAR(const char* charArr);
 int sendProgram(const char* programName, FILE* program, const char* ip, const int port);
+int runProgram(const char* programName, const char* programArg, const char* ip, const int port);
 unsigned long getProgramSize(FILE* program);
 int sendRequest(char* requestType, char* endpoint, struct sendRequestParam reqParams);
 char* saveProgramToBuffer(FILE* program, unsigned long programSize);
@@ -158,6 +159,7 @@ enum ExitCode {
  * @return 9 If we somehow break from the while loop.
  */
 int main() {
+
     initialize();
     printf("%s",STR_GREETING);
 
@@ -422,6 +424,7 @@ void* waitForResponseFromAgents(void* args) {
  * @returns DSH_EXIT_ERROR if doMCp has errors and DSH_EXIT_SUCCESS if process successful
  */
 int doMRun() {
+    printf("MRun\n");
     // create a thread that will monitor for responses
     pthread_t thread;
 
@@ -432,7 +435,7 @@ int doMRun() {
     char *mainProg = Arguments[1].argument;
 
     // Sent out to each agent
-    char *parallelProg = Arguments[2].argument;
+    char* parallelProg = Arguments[2].argument;
 
     // Open file to send to agents
     FILE* file = fopen(parallelProg, "r");
@@ -446,18 +449,20 @@ int doMRun() {
     // Get count for the number of agents we have so we know how many responses we need
     for(int i =0; i < 32; i++) {
         if ((MAgents[i].ip != NULL) || (MAgents[i].port != NULL)) {
-            numAgents = numAgents++;
+            numAgents++;
         }
     }
-
     // Start thread to wait for responses
     pthread_create(&thread, NULL, (void*) waitForResponseFromAgents, (void*)&numAgents);
 
-    // Distribute the parallel program amongst the existing agents
+    // Distribute the parallel program among the existing agents
     for(int i =0; i < 32; i++) {
         if ((MAgents[i].ip != NULL) || (MAgents[i].port != NULL)) {
             // Send the parallel programs
-            sendProgram("parallelProgram", file, MAgents[i].ip, atoi(MAgents[i].port));
+            sendProgram("parallelProg.c", file, MAgents[i].ip, atoi(MAgents[i].port));
+            sleep(2);
+            runProgram("parallelProg","C",MAgents[i].ip, atoi(MAgents[i].port));
+            sleep(2);
         }
     }
 
@@ -720,6 +725,8 @@ int sendRequest(char* requestType, char* endpoint, struct sendRequestParam reqPa
     const char* progName = reqParams.programName;
     const char* progSrc = reqParams.programSrc;
     const char* n = reqParams.n;
+    const char* ip = reqParams.ip;
+    const int port = reqParams.port;
     unsigned int progSize;
     if (progSrc != NULL) {
         progSize = strlen(progSrc);
@@ -746,8 +753,8 @@ int sendRequest(char* requestType, char* endpoint, struct sendRequestParam reqPa
     int sockfd;
     sockfd = socket(AF_INET, SOCK_STREAM, 0);
     servaddr.sin_family = AF_INET;
-    servaddr.sin_port = htons(8080);
-    servaddr.sin_addr.s_addr = inet_addr("127.0.0.1");
+    servaddr.sin_port = htons(port);
+    servaddr.sin_addr.s_addr = inet_addr(ip);
 
     if (connect(sockfd, (struct sockaddr*) &servaddr, sizeof(servaddr)) <0) {
         perror("No connection");
@@ -782,5 +789,13 @@ int sendProgram(const char* programName, FILE* programSrc, const char* ip, const
         return DSH_EXIT_ERROR;
     }
 
+    return DSH_EXIT_SUCCESS;
+}
+
+int runProgram(const char* programName, const char* programArg, const char* ip, const int port) {
+    struct sendRequestParam params = {programName, NULL, programArg, ip, port};
+    if (sendRequest(HTTP_POST, "run", params) != 0) {
+        return DSH_EXIT_ERROR;
+    }
     return DSH_EXIT_SUCCESS;
 }
