@@ -625,7 +625,6 @@ int sendProgram(const char* programName, FILE* program, const char* ip, const in
     unsigned long programSize = getProgramSize(program); // Get size of the program
     char* programBuffer = saveProgramToBuffer(program, programSize); // Save program to char*
     char* progAscii = encodeBinary(programBuffer, programSize); // Encode program in ASCII for embedding
-
     struct sendRequestParam params = {programName, progAscii, NULL, ip, port};
     if (sendRequest(HTTP_POST, "transfer", params) != 0) {
         return DSH_EXIT_ERROR;
