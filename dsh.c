@@ -135,7 +135,7 @@ void initialize();
 // Helper function prototypes
 char* stripNewline(char* charArr);
 void separateArguments(const char* args);
-char* setStructForArgumentsPATH_VAR(char* charArr);
+char* setStructForArgumentsPATH_VAR(const char* charArr);
 int sendProgram(const char* programName, FILE* program, const char* ip, const int port);
 unsigned long getProgramSize(FILE* program);
 int sendRequest(char* requestType, char* endpoint, struct sendRequestParam reqParams);
@@ -487,7 +487,7 @@ char* stripNewline(char* charArr) {
  *
  *
  */
-char* setStructForArgumentsPATH_VAR(char* charArr) {
+char* setStructForArgumentsPATH_VAR(const char* charArr) {
     // TODO: We can problem improve this by iterating only for as many times as there is a ":" divider.
     int startingPoint = 0;
     // Name of directory to set in struct
