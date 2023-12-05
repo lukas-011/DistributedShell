@@ -6,6 +6,7 @@
 #include <unistd.h>
 #include <malloc.h>
 #include "binToText.h"
+#include <pthread.h>
 
 #define BUFFER_SMALL 32
 #define BUFFER_MID 64
@@ -16,30 +17,42 @@
 // CONFIGURATION (Must this be settable at run time?)
 #define SAVE_LOCATION "/dshAgentBin" // Will be set to home dir/dshAgentBin (/home/userName/dshAgentBin)
 
-
+// TODO: Do we need to run transfer and run on threads?
 // Global variables
 char* saveLocation;
+struct threadArgs {
+    char* programName;
+    char* programSrc;
+};
+
+// Threads
+pthread_t transferThread, runThread;
 
 /**
  * The agent will receive the contents of the parallel program, store it on the filesystem, and compile it.
  * @param parallelProg The parallel program
  * @param contentsOfParallelProg The contents of the parallel program
  */
-void transfer(const char* parallelProg, char* contentsOfParallelProg) {
+void* transfer(void* arg) {
+    struct threadArgs* ta = ((struct threadArgs*) arg);
+    char* parallelProg = ta->programName;
+    char* contentsOfParallelProg = ta->programSrc;
+    printf("Look!\n\n%s\n-----\n%s", parallelProg, contentsOfParallelProg);
+
 
     // TODO: What do we save files as? (Name and location?)
     // TODO: Check if directory exists before writing to avoid SEGFAULT
     char* writeLocation = malloc(BUFFER_LARGE);
-    printf("%s/%s", saveLocation, parallelProg);
+    printf("%s/%s\n", saveLocation, parallelProg);
     sprintf( writeLocation,"%s/%s", saveLocation, parallelProg);
-    FILE* writeProg = fopen(writeLocation, "w");
-    unsigned long programSize = strlen(contentsOfParallelProg)/2; // Size of the program
-    char* contentsBin = decodeBinary(contentsOfParallelProg, programSize); // Get the binary
+    FILE* writeFile = fopen(writeLocation, "w");
+    unsigned long programLength = strlen(contentsOfParallelProg); // Size of the program
     // Write the contents of programBuffer,
     // of which each element is of size char,
     // of which is the total size programSize
     // to a file writeProg
-    fwrite(contentsBin, sizeof(char), programSize, writeProg); // Write to local filesystem
+    fwrite(contentsOfParallelProg, sizeof(char), programLength, writeFile); // Write to local filesystem
+    return NULL;
 }
 
 /**
@@ -49,7 +62,8 @@ void transfer(const char* parallelProg, char* contentsOfParallelProg) {
  * @param n The argument for the program
  */
 void run(const char* parallelProg, const char* n) {
-    printf("'Run' API Endpoint\n");
+    printf("Run Endpoint\n");
+
 }
 
  /**
@@ -67,7 +81,7 @@ void run(const char* parallelProg, const char* n) {
      for (int i=startingPoint; i<strlen(line); i++) {
 
 
-        if (line[i] == '&' || line[i] == '\0' || line[i] == '\n') {
+        if (line[i] == '&' || line[i] == '\0') {
             // We found the end in one form or another so let's break outta here
             break;
         }
@@ -131,10 +145,17 @@ int main(void) {
         //printf("Received from client: \n%s", buffer);
 
         if (strstr(buffer, "POST /transfer")) {
+
             char* programName = parseRequest(strstr(buffer, "POST /transfer"), "programName");
-            char* programBin = parseRequest(strstr(buffer, "POST /transfer"), "programBin");
-            transfer(programName, programBin);
+            char* programBin = parseRequest(strstr(buffer, "POST /transfer"), "programSrc");
+
+            struct threadArgs ta;
+            ta.programName = programName;
+            ta.programSrc = programBin;
+            pthread_create(&transferThread, NULL, (void*) transfer, &ta);
+            //transfer(programName, programBin);
         }
+        pthread_join(transferThread, NULL);
     }
 
     if (bytes_received == -1) {
