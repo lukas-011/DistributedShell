@@ -115,7 +115,7 @@ struct MRun {
 
 struct sendRequestParam {
     const char* programName;
-    const char* programAscii;
+    const char* programSrc;
     const char* n;
     const char* ip;
     const int port;
@@ -139,6 +139,7 @@ int sendProgram(const char* programName, FILE* program, const char* ip, const in
 unsigned long getProgramSize(FILE* program);
 int sendRequest(char* requestType, char* endpoint, struct sendRequestParam reqParams);
 char* saveProgramToBuffer(FILE* program, unsigned long programSize);
+char* readTextToBuffer(FILE* program);
 
 // Exit codes
 enum ExitCode {
@@ -157,11 +158,11 @@ int main() {
     printf("%s",STR_GREETING);
 
     // == Uncomment below to work on sending test ==
-    //sendProgram("lampoil",
-    //            fopen("/home/pj/CLionProjects/DistributedShell/test_programs/lampoil", "rb"),
-    //            "127.0.0.1",
-    //            8080);
-    //return 9;
+    sendProgram("lampoil",
+                fopen("/home/pj/TestSrc/lampoil.c", "r"),
+                "127.0.0.1",
+                8080);
+    return 9;
     // == End test stuff ==
     while(1) {
         enum ExitCode result;
@@ -414,7 +415,7 @@ int startProc(char* procName) {
         if (pid > 0) {
             waitpid(pid, &status, 0);
         }
-            // Child
+        // Child
         else {
             execve(procName, NULL, NULL);
             exit(0);
@@ -552,6 +553,20 @@ char* saveProgramToBuffer(FILE* program, unsigned long programSize) {
     return programBuffer;
 }
 
+char* readTextToBuffer(FILE* programSrc) {
+    char* newText = malloc(GINORMOUS_BUFFER);
+    char c;
+
+    do {
+        c = fgetc(programSrc);
+        if ( c != EOF) {
+            sprintf(newText, "%s%c", newText, c);
+        }
+    }while(c != EOF);
+
+    return newText;
+}
+
 /**
  * Sends a request to a socket
  * @param requestType The type of request, probably POST
@@ -562,12 +577,11 @@ char* saveProgramToBuffer(FILE* program, unsigned long programSize) {
 int sendRequest(char* requestType, char* endpoint, struct sendRequestParam reqParams) {
 
     const char* progName = reqParams.programName;
-    const char* progAscii = reqParams.programAscii;
+    const char* progSrc = reqParams.programSrc;
     const char* n = reqParams.n;
-    int progSize;
-
-    if (progAscii != NULL) {
-        progSize = strlen(progAscii)/2;
+    unsigned int progSize;
+    if (progSrc != NULL) {
+        progSize = strlen(progSrc);
     }
     else {
         progSize = 0;
@@ -601,8 +615,8 @@ int sendRequest(char* requestType, char* endpoint, struct sendRequestParam reqPa
     if (reqParams.programName != NULL) {
         sprintf(reqLineParams, "programName=%s",progName);
     }
-    if (reqParams.programAscii != NULL) {
-        sprintf(reqLineParams, "%s&programBin=%s",reqLineParams, progAscii);
+    if (reqParams.programSrc != NULL) {
+        sprintf(reqLineParams, "%s&programSrc=%s",reqLineParams, progSrc);
     }
     if (reqParams.n != NULL) {
         sprintf(reqLineParams, "%s&argument=%s", reqLineParams, n);
@@ -633,12 +647,9 @@ int sendRequest(char* requestType, char* endpoint, struct sendRequestParam reqPa
  * @param port PORT to send to
  * @return DSH_EXIT_SUCCESS if successful, DSH_EXIT_ERROR if not
  */
-int sendProgram(const char* programName, FILE* program, const char* ip, const int port) {
-
-    unsigned long programSize = getProgramSize(program); // Get size of the program
-    char* programBuffer = saveProgramToBuffer(program, programSize); // Save program to char*
-    char* progAscii = encodeBinary(programBuffer, programSize); // Encode program in ASCII for embedding
-    struct sendRequestParam params = {programName, progAscii, NULL, ip, port};
+int sendProgram(const char* programName, FILE* programSrc, const char* ip, const int port) {
+    char* programSrcText = readTextToBuffer(programSrc); // Save program to char*
+    struct sendRequestParam params = {programName, programSrcText, NULL, ip, port};
     if (sendRequest(HTTP_POST, "transfer", params) != 0) {
         return DSH_EXIT_ERROR;
     }
