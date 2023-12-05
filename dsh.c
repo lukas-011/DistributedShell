@@ -229,7 +229,6 @@ int doCommand(char* cmd) {
 }
 
 //**********************************************************************************************************************
-// Mostly done. Check for bugs. Probably need check for >32 agents.
 // PJ
 /**
  * Handler for m_agent command.\n
@@ -707,6 +706,12 @@ char* saveProgramToBuffer(FILE* program, unsigned long programSize) {
 }
 
 //**********************************************************************************************************************
+
+/**
+ * Read text to buffer
+ * @param programSrc C source code of a program
+ * @return The C source code as a char*
+ */
 char* readTextToBuffer(FILE* programSrc) {
     char* newText = malloc(GINORMOUS_BUFFER);
     char c;
@@ -722,6 +727,13 @@ char* readTextToBuffer(FILE* programSrc) {
 }
 
 //**********************************************************************************************************************
+
+/**
+ * Gets word from string
+ * @param word The word
+ * @param pos The position
+ * @return The substring
+ */
 char* getWordFromString(char* word, int pos) {
     int indexCounter = 0;
     int setChars = 0;
@@ -744,6 +756,13 @@ char* getWordFromString(char* word, int pos) {
 }
 
 //**********************************************************************************************************************
+
+/**
+ * Gets everything after a character
+ * @param word The word
+ * @param pos The position
+ * @return The substring
+ */
 char* getEverythingAfter(char* word, int pos) {
     int indexCounter = 0;
     int setChars = 0;
@@ -845,20 +864,18 @@ int sendProgram(const char* programName, FILE* programSrc, const char* ip, const
     return DSH_EXIT_SUCCESS;
 }
 
+/**
+ * Calls run on the agent
+ * @param programName Program to run
+ * @param programArg Argument of the program
+ * @param ip The IP Address to connect to
+ * @param port Port to connect to
+ * @return DSH_EXIT_SUCCESS if succeeded; DSH_EXIT_ERROR if not
+ */
 int runProgram(const char* programName, const char* programArg, const char* ip, const int port) {
     struct sendRequestParam params = {programName, NULL, programArg, ip, port};
     if (sendRequest(HTTP_POST, "run", params) != 0) {
         return DSH_EXIT_ERROR;
     }
-    return DSH_EXIT_SUCCESS;
-}
-
-int m_cpTest(const char* programName, FILE* programSrc, const char* ip, const int port){
-    char* programSrcText = readTextToBuffer(programSrc); // Save program to char*
-    struct sendRequestParam params = {programName, programSrcText, NULL, ip, port};
-    if (sendRequest(HTTP_POST, "transfer", params) != 0) {
-        return DSH_EXIT_ERROR;
-    }
-
     return DSH_EXIT_SUCCESS;
 }
