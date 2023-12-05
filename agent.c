@@ -26,7 +26,8 @@ struct threadArgs {
 };
 
 // Threads
-pthread_t transferThread, runThread;
+pthread_t threads[4];
+int threadIndexes[4];
 
 /**
  * The agent will receive the contents of the parallel program, store it on the filesystem, and compile it.
@@ -141,8 +142,18 @@ int main(void) {
     // Receive data from the client
     ssize_t bytes_received;
     while ((bytes_received = read(client_socket, buffer, BUFFER_GINORMOUS)) >0) {
+        int threadToStart;
         buffer[bytes_received] = '\0'; // Null-terminate the received data
-        //printf("Received from client: \n%s", buffer);
+
+        // Determine which thread to start
+        for (int i=0;i<4;i++) {
+            if (i+1 == 4) {
+                threadToStart = threadIndexes[3];
+            }
+            else if (threadIndexes[i+1] == 0) {
+                threadToStart = threadIndexes[i];
+            }
+        }
 
         if (strstr(buffer, "POST /transfer")) {
 
@@ -152,10 +163,10 @@ int main(void) {
             struct threadArgs ta;
             ta.programName = programName;
             ta.programSrc = programBin;
-            pthread_create(&transferThread, NULL, (void*) transfer, &ta);
+            pthread_create(&threads[threadToStart], NULL, (void*) transfer, &ta);
             //transfer(programName, programBin);
         }
-        pthread_join(transferThread, NULL);
+        pthread_join(threads[threadToStart], NULL);
     }
 
     if (bytes_received == -1) {

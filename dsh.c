@@ -158,7 +158,7 @@ int main() {
     printf("%s",STR_GREETING);
 
     // == Uncomment below to work on sending test ==
-    sendProgram("lampoil",
+    sendProgram("lampoil.c",
                 fopen("/home/pj/TestSrc/lampoil.c", "r"),
                 "127.0.0.1",
                 8080);
