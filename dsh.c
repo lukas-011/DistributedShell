@@ -356,13 +356,12 @@ int doMCp() {
     // close the file since we are done with it
     fclose(file);
 
-    printf("%s", contents);
-
     // Send the contents over to the filesystem server depending on how many agents there are
     for(int i = 0; i < 32; i++) {
         // check if there is an agent by checking for exiting ip and port for each agent
         if(MAgents[i].ip != NULL || MAgents[i].port != NULL) {
-            struct sendRequestParam copyRequest = {programName, programASCII, n, ip, port};
+            // TODO: what does program name have to be
+            struct sendRequestParam copyRequest = {local, contents, n, MAgents[i].ip, MAgents[i].port};
         }
     }
 
@@ -379,20 +378,49 @@ int doMCp() {
  */
 int doMRun() {
     //runs locally
-    char *mainProg;
+    char *mainProg = Arguments[1].argument;
 
     //sent out to each agent.
-    char *parallelProg;
+    char *parallelProg = Arguments[2].argument;
 
-    mainProg = Arguments[1].argument;
-    parallelProg = Arguments[2].argument;
+    FILE* file = fopen(parallelProg, "rb");
 
+    // Check if the file exists
+    if(file == NULL){
+        printf("\nError: could not open file\n");
+        return DSH_EXIT_ERROR;
+    }
+
+    // Copy the contents of the file to a variable
+    // allocate memory for the string
+    fseek(file, 0L, SEEK_END);
+    unsigned long lengthOfFile = ftell(file);
+    fseek(file, 0, SEEK_SET);
+
+    // Allocate memory to store the contents of our file to a string
+    char* contents = (char*)malloc(lengthOfFile + 1);
+
+    // Check if the contents are null
+    if(contents == NULL){
+        fclose(file);
+        printf("\nERROR: No contents in the file");
+        return DSH_EXIT_ERROR;
+    }
+
+    // Copy the contents of the file to the string and then add a '\0' to signify the end of the file
+    fread(contents, 1, lengthOfFile, file);
+    contents[lengthOfFile] = '\0';
+
+    // Start the main process locally
     startProc(mainProg);
 
-    startProc(parallelProg);
+    // Distribute the parallel program amongst the existing agents
     for(int i =0; i < 32; i++) {
         if ((MAgents[i].ip != NULL) || (MAgents[i].port != NULL)) {
-            struct sendRequestParam parallelStruct = {programName, programASCII, n, ip, port};
+            // Set struct to send
+            struct sendRequestParam parallelStruct = {parallelProg, contents, n, MAgents[i].ip, MAgents[i].port};
+            // Send the parallel programs
+
         }
     }
     return DSH_EXIT_SUCCESS;
