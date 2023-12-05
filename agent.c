@@ -22,7 +22,7 @@
 char* saveLocation;
 struct threadArgs {
     char* programName;
-    char* programBin;
+    char* programSrc;
 };
 
 // Threads
@@ -36,10 +36,8 @@ pthread_t transferThread, runThread;
 void* transfer(void* arg) {
     struct threadArgs* ta = ((struct threadArgs*) arg);
     char* parallelProg = ta->programName;
-    char* contentsOfParallelProg = ta->programBin;
-
-    printf("Program Name: %s\n", parallelProg);
-    printf("Program Contents: %s\n", contentsOfParallelProg);
+    char* contentsOfParallelProg = ta->programSrc;
+    printf("Look!\n\n%s\n-----\n%s", parallelProg, contentsOfParallelProg);
 
 
     // TODO: What do we save files as? (Name and location?)
@@ -47,18 +45,14 @@ void* transfer(void* arg) {
     char* writeLocation = malloc(BUFFER_LARGE);
     printf("%s/%s\n", saveLocation, parallelProg);
     sprintf( writeLocation,"%s/%s", saveLocation, parallelProg);
-    FILE* writeProg = fopen(writeLocation, "w");
-    unsigned long programSize = strlen(contentsOfParallelProg)/2; // Size of the program
-    char* contentsBin = decodeBinary(contentsOfParallelProg, programSize); // Get the binary
+    FILE* writeFile = fopen(writeLocation, "w");
+    unsigned long programLength = strlen(contentsOfParallelProg); // Size of the program
     // Write the contents of programBuffer,
     // of which each element is of size char,
     // of which is the total size programSize
     // to a file writeProg
-
-    printf("Contents: %s", contentsOfParallelProg);
-
-    fwrite(contentsBin, sizeof(char), programSize, writeProg); // Write to local filesystem
-
+    fwrite(contentsOfParallelProg, sizeof(char), programLength, writeFile); // Write to local filesystem
+    return NULL;
 }
 
 /**
@@ -104,7 +98,7 @@ void run(const char* parallelProg, const char* n) {
      for (int i=startingPoint; i<strlen(line); i++) {
 
 
-        if (line[i] == '&' || line[i] == '\0' || line[i] == '\n') {
+        if (line[i] == '&' || line[i] == '\0') {
             // We found the end in one form or another so let's break outta here
             break;
         }
@@ -170,11 +164,11 @@ int main(void) {
         if (strstr(buffer, "POST /transfer")) {
 
             char* programName = parseRequest(strstr(buffer, "POST /transfer"), "programName");
-            char* programBin = parseRequest(strstr(buffer, "POST /transfer"), "programBin");
+            char* programBin = parseRequest(strstr(buffer, "POST /transfer"), "programSrc");
 
             struct threadArgs ta;
             ta.programName = programName;
-            ta.programBin = programBin;
+            ta.programSrc = programBin;
             pthread_create(&transferThread, NULL, (void*) transfer, &ta);
             //transfer(programName, programBin);
         }

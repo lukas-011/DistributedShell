@@ -115,7 +115,7 @@ struct MRun {
 
 struct sendRequestParam {
     const char* programName;
-    const char* programAscii;
+    const char* programSrc;
     const char* n;
     const char* ip;
     const int port;
@@ -139,6 +139,7 @@ int sendProgram(const char* programName, FILE* program, const char* ip, const in
 unsigned long getProgramSize(FILE* program);
 int sendRequest(char* requestType, char* endpoint, struct sendRequestParam reqParams);
 char* saveProgramToBuffer(FILE* program, unsigned long programSize);
+char* readTextToBuffer(FILE* program);
 
 // Exit codes
 enum ExitCode {
@@ -315,17 +316,17 @@ int doMAgent() {
 /**
  * Copies a local file using the name provided in dest. The copy
  * is made to the filesystem server and the number of partitions is
- * equal to the number of agents that were created.
+ * equal to the number of agents that were created. Send to port 1050-1059 for the file system server
  * @Syntax m_cp local dest
  * @returns DSH_EXIT_ERROR if doMCp has errors and DSH_EXIT_SUCCESS if process successful
  */
 int doMCp() {
     // Get the arguments that the user inputted from the arguments struct
-    char* local = Arguments[0].argument; // First should be local which is the source file that needs to be copied
-    char* dest = Arguments[0].argument; // Next should be dest which is the destination of the local file
+    char* local = Arguments[1].argument; // First should be local which is the source file that needs to be copied
+    char* dest = Arguments[2].argument; // Next should be dest which is the destination of the local file
 
     // Get the local file from the provided destination as a binary because we are sending it over the internet
-    FILE* file = fopen(local, "rb");
+    FILE* file = fopen(dest, "rb");
 
     // Check if the file exists
     if(file == NULL){
@@ -334,7 +335,6 @@ int doMCp() {
     }
 
     // Copy the contents of the file to a variable
-
     // allocate memory for the string
     fseek(file, 0L, SEEK_END);
     unsigned long lengthOfFile = ftell(file);
@@ -350,15 +350,23 @@ int doMCp() {
         return DSH_EXIT_ERROR;
     }
 
-    // Read the file into the string
+    // Copy the contents of the file to the string and then add a '\0' to signify the end of the file
     fread(contents, 1, lengthOfFile, file);
-    // add \0 to signify the end of the file
     contents[lengthOfFile] = '\0';
 
-    // Send the file to all existing agents
-
-    // close the file and return DSH success
+    // close the file since we are done with it
     fclose(file);
+
+    // Send the contents over to the filesystem server depending on how many agents there are
+    for(int i = 0; i < 32; i++) {
+        // check if there is an agent by checking for exiting ip and port for each agent
+        if(MAgents[i].ip != NULL || MAgents[i].port != NULL) {
+            // TODO: what does program name have to be
+            struct sendRequestParam copyRequest = {local, contents, n, MAgents[i].ip, MAgents[i].port};
+        }
+    }
+
+    // Return DSH success
     return DSH_EXIT_SUCCESS;
 }
 //**********************************************************************************************************************
@@ -370,8 +378,53 @@ int doMCp() {
  * @returns DSH_EXIT_ERROR if doMCp has errors and DSH_EXIT_SUCCESS if process successful
  */
 int doMRun() {
+    //runs locally
+    char *mainProg = Arguments[1].argument;
 
-    return 0;
+    //sent out to each agent.
+    char *parallelProg = Arguments[2].argument;
+
+    FILE* file = fopen(parallelProg, "rb");
+
+    // Check if the file exists
+    if(file == NULL){
+        printf("\nError: could not open file\n");
+        return DSH_EXIT_ERROR;
+    }
+
+    // Copy the contents of the file to a variable
+    // allocate memory for the string
+    fseek(file, 0L, SEEK_END);
+    unsigned long lengthOfFile = ftell(file);
+    fseek(file, 0, SEEK_SET);
+
+    // Allocate memory to store the contents of our file to a string
+    char* contents = (char*)malloc(lengthOfFile + 1);
+
+    // Check if the contents are null
+    if(contents == NULL){
+        fclose(file);
+        printf("\nERROR: No contents in the file");
+        return DSH_EXIT_ERROR;
+    }
+
+    // Copy the contents of the file to the string and then add a '\0' to signify the end of the file
+    fread(contents, 1, lengthOfFile, file);
+    contents[lengthOfFile] = '\0';
+
+    // Start the main process locally
+    startProc(mainProg);
+
+    // Distribute the parallel program amongst the existing agents
+    for(int i =0; i < 32; i++) {
+        if ((MAgents[i].ip != NULL) || (MAgents[i].port != NULL)) {
+            // Set struct to send
+            struct sendRequestParam parallelStruct = {parallelProg, contents, n, MAgents[i].ip, MAgents[i].port};
+            // Send the parallel programs
+
+        }
+    }
+    return DSH_EXIT_SUCCESS;
 }
 
 //**********************************************************************************************************************
@@ -414,7 +467,7 @@ int startProc(char* procName) {
         if (pid > 0) {
             waitpid(pid, &status, 0);
         }
-            // Child
+        // Child
         else {
             execve(procName, NULL, NULL);
             exit(0);
@@ -552,6 +605,20 @@ char* saveProgramToBuffer(FILE* program, unsigned long programSize) {
     return programBuffer;
 }
 
+char* readTextToBuffer(FILE* programSrc) {
+    char* newText = malloc(GINORMOUS_BUFFER);
+    char c;
+
+    do {
+        c = fgetc(programSrc);
+        if ( c != EOF) {
+            sprintf(newText, "%s%c", newText, c);
+        }
+    }while(c != EOF);
+
+    return newText;
+}
+
 /**
  * Sends a request to a socket
  * @param requestType The type of request, probably POST
@@ -562,12 +629,11 @@ char* saveProgramToBuffer(FILE* program, unsigned long programSize) {
 int sendRequest(char* requestType, char* endpoint, struct sendRequestParam reqParams) {
 
     const char* progName = reqParams.programName;
-    const char* progAscii = reqParams.programAscii;
+    const char* progSrc = reqParams.programSrc;
     const char* n = reqParams.n;
-    int progSize;
-
-    if (progAscii != NULL) {
-        progSize = strlen(progAscii)/2;
+    unsigned int progSize;
+    if (progSrc != NULL) {
+        progSize = strlen(progSrc);
     }
     else {
         progSize = 0;
@@ -601,8 +667,8 @@ int sendRequest(char* requestType, char* endpoint, struct sendRequestParam reqPa
     if (reqParams.programName != NULL) {
         sprintf(reqLineParams, "programName=%s",progName);
     }
-    if (reqParams.programAscii != NULL) {
-        sprintf(reqLineParams, "%s&programBin=%s",reqLineParams, progAscii);
+    if (reqParams.programSrc != NULL) {
+        sprintf(reqLineParams, "%s&programSrc=%s",reqLineParams, progSrc);
     }
     if (reqParams.n != NULL) {
         sprintf(reqLineParams, "%s&argument=%s", reqLineParams, n);
@@ -633,12 +699,9 @@ int sendRequest(char* requestType, char* endpoint, struct sendRequestParam reqPa
  * @param port PORT to send to
  * @return DSH_EXIT_SUCCESS if successful, DSH_EXIT_ERROR if not
  */
-int sendProgram(const char* programName, FILE* program, const char* ip, const int port) {
-
-    unsigned long programSize = getProgramSize(program); // Get size of the program
-    char* programBuffer = saveProgramToBuffer(program, programSize); // Save program to char*
-    char* progAscii = encodeBinary(programBuffer, programSize); // Encode program in ASCII for embedding
-    struct sendRequestParam params = {programName, progAscii, NULL, ip, port};
+int sendProgram(const char* programName, FILE* programSrc, const char* ip, const int port) {
+    char* programSrcText = readTextToBuffer(programSrc); // Save program to char*
+    struct sendRequestParam params = {programName, programSrcText, NULL, ip, port};
     if (sendRequest(HTTP_POST, "transfer", params) != 0) {
         return DSH_EXIT_ERROR;
     }
