@@ -54,6 +54,7 @@ void* transfer(void* arg) {
     // of which is the total size programSize
     // to a file writeProg
     fwrite(contentsOfParallelProg, sizeof(char), programLength, writeFile); // Write to local filesystem
+    fclose(writeFile);
     return NULL;
 }
 
@@ -70,7 +71,7 @@ void* run(void* arg) {
     char* parallelProg = ta->programName;
     char* n = ta->n;
 
-    char* compileCommand = malloc(BUFFER_XLARGE);
+    char* compileCommand = malloc(BUFFER_XLARGE+1);
     strcat(compileCommand, "gcc -o ");
     strcat(compileCommand, saveLocation);
     strcat(compileCommand, "/");
@@ -80,6 +81,7 @@ void* run(void* arg) {
     strcat(compileCommand, "/");
     strcat(compileCommand, parallelProg);
     strcat(compileCommand, ".c");
+    strcat(compileCommand, "\0");
     int compileResult = system(compileCommand);
 
     char* runProg = malloc(BUFFER_XLARGE);
@@ -93,9 +95,7 @@ void* run(void* arg) {
     char* paramToSend = malloc(sizeof(char)*2);
     sprintf(paramToSend,"%d",result);
     sendRequest("m_run_listener",paramToSend);
-    free(compileCommand);
-    free(runProg);
-    free(paramToSend);
+
     // TODO: Fix issue where it can't run on the second time through
     return NULL;
 }
@@ -229,12 +229,13 @@ int sendRequest(char* endpoint, char* sendRequestParam) {
  */
 int main(void) {
     int doConnect = 1;
+    saveLocation = malloc(BUFFER_LARGE);
+    strcpy(saveLocation, getenv(("HOME")));
+    strcat(saveLocation, SAVE_LOCATION);
+    printf("DSH Agent\n");
     while (doConnect) {
 
-        saveLocation = malloc(BUFFER_LARGE);
-        strcpy(saveLocation, getenv(("HOME")));
-        strcat(saveLocation, SAVE_LOCATION);
-        printf("DSH Agent\n");
+        printf("Waiting for connection...\n");
         int server_socket, client_socket;
         struct sockaddr_in server_address, client_address;
         socklen_t client_address_len = sizeof(client_address);
@@ -287,20 +288,22 @@ int main(void) {
                     threadToStart = threadIndexes[i];
                 }
             }
-
+            char** param1;
+            char** param2;
             if (strstr(buffer, "transfer")) {
                 started = 1;
-                char *programName = stripNewline(getWordFromString(buffer, 2));
-                char *programSrc = getEverythingAfter(buffer, 3);
+                char* programName = stripNewline(getWordFromString(buffer, 2));
+                char* programSrc = getEverythingAfter(buffer, 3);
 
                 struct threadArgs ta;
                 ta.programName = programName;
                 ta.programSrc = programSrc;
                 pthread_create(&threads[threadToStart], NULL, (void *) transfer, &ta);
+
             } else if (strstr(buffer, "run")) {
                 started = 1;
-                char *parallelProg = stripNewline(getWordFromString(buffer, 2));
-                char *n = stripNewline(getWordFromString(buffer, 3));
+                char* parallelProg = stripNewline(getWordFromString(buffer, 2));
+                char* n = stripNewline(getWordFromString(buffer, 3));
                 struct threadArgs ta;
                 ta.programName = parallelProg;
                 ta.n = n;
@@ -310,7 +313,9 @@ int main(void) {
                 doConnect = 0;
                 printf("Agent will be closed on disconnect.\n");
             }
-            if (started == 1) { pthread_join(threads[threadToStart], NULL); }
+            if (started == 1) {
+                pthread_join(threads[threadToStart], NULL);
+            }
 
         }
 
