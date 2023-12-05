@@ -23,6 +23,7 @@ char* saveLocation;
 struct threadArgs {
     char* programName;
     char* programSrc;
+    char* n;
 };
 
 // Threads
@@ -62,12 +63,22 @@ void* transfer(void* arg) {
  * @param parallelProg The parallel program
  * @param n The argument for the program
  */
-void run(const char* parallelProg, const char* n) {
+void run(void* arg) {
+
+    struct threadArgs* ta = ((struct threadArgs*) arg);
+
+    char* parallelProg = ta->programName;
+    char* n = ta->n;
+
     printf("Run Endpoint\n");
-    char *compileCommand = malloc(32);
+    char *compileCommand = malloc(BUFFER_LARGE);
     strcat(compileCommand, "gcc -o ");
+    strcat(compileCommand, saveLocation);
+    strcat(compileCommand, "/");
     strcat(compileCommand, parallelProg);
     strcat(compileCommand, " ");
+    strcat(compileCommand, saveLocation);
+    strcat(compileCommand, "/");
     strcat(compileCommand, parallelProg);
     strcat(compileCommand, ".c");
     int compileResult = system(compileCommand);
@@ -76,8 +87,9 @@ void run(const char* parallelProg, const char* n) {
     }else{
 //        Uh oh
     }
-    char *runProg = malloc(32);
-    strcat(runProg, "./");
+    char *runProg = malloc(BUFFER_LARGE);
+    strcat(runProg, saveLocation);
+    strcat(runProg, "/");
     strcat(runProg, parallelProg);
     strcat(runProg, " ");
     strcat(runProg, n);
@@ -109,6 +121,66 @@ void run(const char* parallelProg, const char* n) {
      }
      return value;
  }
+
+ char* getWordFromString(char* word, int pos) {
+     int indexCounter = 0;
+     int setChars = 0;
+     char* newWord = malloc(BUFFER_SMALL);
+     for (int i=0; i< strlen(word);i++) {
+         if (indexCounter == pos-1) {
+             setChars = 1;
+         }
+         if (word[i] == '\0' || word[i] == ' ') {
+             indexCounter++;
+             if (indexCounter == pos) {
+                 break;
+             }
+
+         }
+         if (setChars == 1) {sprintf(newWord, "%s%c", newWord, word[i]);}
+
+     }
+     return newWord;
+ }
+
+char* getEverythingAfter(char* word, int pos) {
+    int indexCounter = 0;
+    int setChars = 0;
+    char* newWord = malloc(BUFFER_GINORMOUS);
+    for (int i=0; i< strlen(word);i++) {
+        if (indexCounter == pos - 1) {
+            setChars = 1;
+        }
+        if (word[i] == ' ') {
+            indexCounter++;
+        } else if (word[i] == '\0') {
+            break;
+        }
+
+
+        if (setChars == 1) { sprintf(newWord, "%s%c", newWord, word[i]); }
+    }
+
+    return newWord;
+}
+
+/**
+ * Removes trailing \\n from char array.
+ *
+ * @param charArray Character array to strip \\n from
+ *
+ * @return The stripped char array
+ */
+char* stripNewline(char* charArr) {
+    for (int i=0; i<BUFFER_MID; i++) {
+        if (charArr[i] == '\n') {
+            charArr[i] = '\0';
+            break;
+        }
+    }
+
+    return charArr;
+}
 
 /**
  * Listens for requests and calls the required endpoint.
@@ -172,17 +244,26 @@ int main(void) {
             }
         }
 
-        if (strstr(buffer, "POST /transfer")) {
+        if (strstr(buffer, "transfer")) {
 
-            char* programName = parseRequest(strstr(buffer, "POST /transfer"), "programName");
-            char* programBin = parseRequest(strstr(buffer, "POST /transfer"), "programSrc");
+            char* programName = stripNewline(getWordFromString(buffer, 2));
+            char* programSrc = malloc(BUFFER_GINORMOUS);
+            programSrc = getEverythingAfter(buffer, 3);
 
             struct threadArgs ta;
             ta.programName = programName;
-            ta.programSrc = programBin;
+            ta.programSrc = programSrc;
             pthread_create(&threads[threadToStart], NULL, (void*) transfer, &ta);
-            //transfer(programName, programBin);
         }
+        else if (strstr(buffer, "run")) {
+            char* parallelProg = stripNewline(getWordFromString(buffer, 2));
+            char* n = stripNewline(getWordFromString(buffer, 3));
+            struct threadArgs ta;
+            ta.programName = parallelProg;
+            ta.n = n;
+            pthread_create(&threads[threadToStart], NULL, (void*) run, &ta);
+        }
+
         pthread_join(threads[threadToStart], NULL);
     }
 

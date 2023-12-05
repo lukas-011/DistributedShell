@@ -157,13 +157,6 @@ int main() {
     initialize();
     printf("%s",STR_GREETING);
 
-    // == Uncomment below to work on sending test ==
-    sendProgram("lampoil",
-                fopen("/home/pj/TestSrc/lampoil.c", "r"),
-                "127.0.0.1",
-                8080);
-    return 9;
-    // == End test stuff ==
     while(1) {
         enum ExitCode result;
         char userInput[CMD_BUFFER];
@@ -362,7 +355,7 @@ int doMCp() {
         // check if there is an agent by checking for exiting ip and port for each agent
         if(MAgents[i].ip != NULL || MAgents[i].port != NULL) {
             // TODO: what does program name have to be
-            struct sendRequestParam copyRequest = {local, contents, n, MAgents[i].ip, MAgents[i].port};
+            //struct sendRequestParam copyRequest = {local, contents, n, MAgents[i].ip, MAgents[i].port};
         }
     }
 
@@ -419,7 +412,7 @@ int doMRun() {
     for(int i =0; i < 32; i++) {
         if ((MAgents[i].ip != NULL) || (MAgents[i].port != NULL)) {
             // Set struct to send
-            struct sendRequestParam parallelStruct = {parallelProg, contents, n, MAgents[i].ip, MAgents[i].port};
+            //struct sendRequestParam parallelStruct = {parallelProg, contents, n, MAgents[i].ip, MAgents[i].port};
             // Send the parallel programs
 
         }
@@ -619,6 +612,48 @@ char* readTextToBuffer(FILE* programSrc) {
     return newText;
 }
 
+char* getWordFromString(char* word, int pos) {
+    int indexCounter = 0;
+    int setChars = 0;
+    char* newWord = malloc(SMALL_BUFFER);
+    for (int i=0; i< strlen(word);i++) {
+        if (indexCounter == pos-1) {
+            setChars = 1;
+        }
+        if (word[i] == '\0' || word[i] == ' ') {
+            indexCounter++;
+            if (indexCounter == pos) {
+                break;
+            }
+
+        }
+        if (setChars == 1) {sprintf(newWord, "%s%c", newWord, word[i]);}
+
+    }
+    return newWord;
+}
+
+char* getEverythingAfter(char* word, int pos) {
+    int indexCounter = 0;
+    int setChars = 0;
+    char* newWord = malloc(GINORMOUS_BUFFER);
+    for (int i=0; i< strlen(word);i++) {
+        if (indexCounter == pos - 1) {
+            setChars = 1;
+        }
+        if (word[i] == ' ') {
+            indexCounter++;
+        } else if (word[i] == '\0') {
+            break;
+        }
+
+
+        if (setChars == 1) { sprintf(newWord, "%s%c", newWord, word[i]); }
+    }
+
+    return newWord;
+}
+
 /**
  * Sends a request to a socket
  * @param requestType The type of request, probably POST
@@ -638,8 +673,19 @@ int sendRequest(char* requestType, char* endpoint, struct sendRequestParam reqPa
     else {
         progSize = 0;
     }
+    char* param1 = malloc(MID_BUFFER);
+    char* param2 = malloc(GINORMOUS_BUFFER);
 
-    char* request = malloc((progSize*2)+GINORMOUS_BUFFER); // Enough room for program ascii plus 4096
+    if (strcmp(endpoint,"transfer") == 0) {
+        strcpy(param1, progName);
+        strcpy(param2, progSrc);
+    }
+    else if (strcmp(endpoint,"run") == 0){
+        strcpy(param1, progName);
+        strcpy(param2, n);
+    }
+
+    char* request = malloc(GINORMOUS_BUFFER); // 4096
 
     // Based on client example
     struct sockaddr_in servaddr;
@@ -653,35 +699,11 @@ int sendRequest(char* requestType, char* endpoint, struct sendRequestParam reqPa
         perror("No connection");
         return DSH_EXIT_ERROR;
     }
-
-    // Allocate request lines and fill out the lines
-    char* reqLineHeader = malloc(MID_BUFFER);
-    char* reqLineHost = malloc(MID_BUFFER);
-    char* reqLineContentType = malloc(MID_BUFFER);
-    char* reqLineCount = malloc(MID_BUFFER);
-    char* reqLineParams = malloc(MID_BUFFER);
-
-    sprintf(reqLineHeader, "%s /%s HTTP/1.1\r\n", requestType, endpoint);
-    sprintf(reqLineHost, "HOST: %s\r\n", getenv(STR_HOST));
-    sprintf(reqLineContentType, "Content-Type: application/x-www-form-urlencoded\r\n");
-    if (reqParams.programName != NULL) {
-        sprintf(reqLineParams, "programName=%s",progName);
-    }
-    if (reqParams.programSrc != NULL) {
-        sprintf(reqLineParams, "%s&programSrc=%s",reqLineParams, progSrc);
-    }
-    if (reqParams.n != NULL) {
-        sprintf(reqLineParams, "%s&argument=%s", reqLineParams, n);
-    }
-    sprintf(reqLineCount, "Content-Length: %lu\r\n\r\n", strlen(reqLineParams));
-
-
-    // Build the request
-    strcpy(request, reqLineHeader);
-    strcat(request, reqLineHost);
-    strcat(request, reqLineContentType);
-    strcat(request, reqLineCount);
-    strcat(request, reqLineParams);
+    strcpy(request, endpoint);
+    strcat(request, " ");
+    strcat(request, param1);
+    strcat(request, " ");
+    strcat(request, param2);
 
     long connection = write(sockfd, request, strlen(request));
     if (connection < 0) {perror("Couldn't write to socket"); return DSH_EXIT_ERROR;}
