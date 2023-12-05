@@ -362,6 +362,17 @@ int doMRun() {
     }
 
     // Set off mainProg to wait for each agent to finish responding
+        int pid = fork();
+        int status = -99;
+        // Parent
+        if (pid > 0) {
+            waitpid(pid, &status, 0);
+        }
+        // Child
+        else {
+            execve(mainProg, NULL, NULL);
+            exit(0);
+        }
 
     // Distribute the parallel program amongst the existing agents
     for(int i =0; i < 32; i++) {
