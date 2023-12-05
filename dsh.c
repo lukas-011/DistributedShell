@@ -329,7 +329,7 @@ int doMCp() {
 
     // Check if the file exists
     if(file == NULL){
-        printf("\nError: could not open file");
+        printf("\nError: could not open file\n");
         return DSH_EXIT_ERROR;
     }
 
@@ -338,9 +338,22 @@ int doMCp() {
     // allocate memory for the string
     fseek(file, 0L, SEEK_END);
     unsigned long lengthOfFile = ftell(file);
+    fseek(file, 0, SEEK_SET);
 
-    char* contents = malloc(lengthOfFile * sizeof(char));
-    //fputs(const char *);
+    // Allocate memory to store the contents of our file to a string
+    char* contents = (char*)malloc(lengthOfFile + 1);
+
+    // Check if the contents are null
+    if(contents == NULL){
+        fclose(file);
+        printf("\nERROR: No contents in the file");
+        return DSH_EXIT_ERROR;
+    }
+
+    // Read the file into the string
+    fread(contents, 1, lengthOfFile, file);
+    // add \0 to signify the end of the file
+    contents[lengthOfFile] = '\0';
 
     // Send the file to all existing agents
 
@@ -403,7 +416,7 @@ int startProc(char* procName) {
         }
             // Child
         else {
-            execve(procName, NULL, NULL);
+            //execve(procName, NULL, NULL);
             exit(0);
         }
         return 0;
@@ -448,7 +461,7 @@ char* stripNewline(char* charArr) {
  *
  * @param charArr contains the character array for the arguments we want to set in the struct
  *
- * @return TODO: What does this return?
+ *
  */
 char* setStructForArgumentsPATH_VAR(char* charArr) {
     // TODO: We can problem improve this by iterating only for as many times as there is a ":" divider.
