@@ -39,13 +39,10 @@ void* transfer(void* arg) {
     struct threadArgs* ta = ((struct threadArgs*) arg);
     char* parallelProg = ta->programName;
     char* contentsOfParallelProg = ta->programSrc;
-    printf("Look!\n\n%s\n-----\n%s", parallelProg, contentsOfParallelProg);
-
 
     // TODO: What do we save files as? (Name and location?)
     // TODO: Check if directory exists before writing to avoid SEGFAULT
     char* writeLocation = malloc(BUFFER_LARGE);
-    printf("%s/%s\n", saveLocation, parallelProg);
     sprintf( writeLocation,"%s/%s", saveLocation, parallelProg);
     FILE* writeFile = fopen(writeLocation, "w");
     unsigned long programLength = strlen(contentsOfParallelProg); // Size of the program
@@ -63,14 +60,13 @@ void* transfer(void* arg) {
  * @param parallelProg The parallel program
  * @param n The argument for the program
  */
-void run(void* arg) {
+void* run(void* arg) {
 
     struct threadArgs* ta = ((struct threadArgs*) arg);
 
     char* parallelProg = ta->programName;
     char* n = ta->n;
 
-    printf("Run Endpoint\n");
     char *compileCommand = malloc(BUFFER_LARGE);
     strcat(compileCommand, "gcc -o ");
     strcat(compileCommand, saveLocation);
@@ -231,8 +227,10 @@ int main(void) {
     // Receive data from the client
     ssize_t bytes_received;
     while ((bytes_received = read(client_socket, buffer, BUFFER_GINORMOUS)) >0) {
+        int started = 0;
         int threadToStart;
         buffer[bytes_received] = '\0'; // Null-terminate the received data
+        printf("Received:\n-----\n%s", buffer);
 
         // Determine which thread to start
         for (int i=0;i<4;i++) {
@@ -245,7 +243,7 @@ int main(void) {
         }
 
         if (strstr(buffer, "transfer")) {
-
+            started = 1;
             char* programName = stripNewline(getWordFromString(buffer, 2));
             char* programSrc = malloc(BUFFER_GINORMOUS);
             programSrc = getEverythingAfter(buffer, 3);
@@ -256,6 +254,7 @@ int main(void) {
             pthread_create(&threads[threadToStart], NULL, (void*) transfer, &ta);
         }
         else if (strstr(buffer, "run")) {
+            started = 1;
             char* parallelProg = stripNewline(getWordFromString(buffer, 2));
             char* n = stripNewline(getWordFromString(buffer, 3));
             struct threadArgs ta;
@@ -263,8 +262,8 @@ int main(void) {
             ta.n = n;
             pthread_create(&threads[threadToStart], NULL, (void*) run, &ta);
         }
+        if (started == 1) {pthread_join(threads[threadToStart], NULL);}
 
-        pthread_join(threads[threadToStart], NULL);
     }
 
     if (bytes_received == -1) {
