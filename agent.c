@@ -100,19 +100,19 @@ void* run(void* arg) {
     return NULL;
 }
 
- /**
-  * Parses a request for a parameter's value
-  * @param request The request to parse
-  * @param param The parameter to find
-  * @return The value of the parameter
-  */
- char* parseRequest(const char* request, const char* param) {
-     char* line = strstr(request, param);
-     char* value = malloc(BUFFER_GINORMOUS);
+/**
+ * Parses a request for a parameter's value
+ * @param request The request to parse
+ * @param param The parameter to find
+ * @return The value of the parameter
+ */
+char* parseRequest(const char* request, const char* param) {
+    char* line = strstr(request, param);
+    char* value = malloc(BUFFER_GINORMOUS);
 
-     // Start param length + 1 for equal sign
-     int startingPoint = strlen(param)+1;
-     for (int i=startingPoint; i<strlen(line); i++) {
+    // Start param length + 1 for equal sign
+    int startingPoint = strlen(param)+1;
+    for (int i=startingPoint; i<strlen(line); i++) {
 
 
         if (line[i] == '&' || line[i] == '\0') {
@@ -122,30 +122,30 @@ void* run(void* arg) {
 
 
         value[i-startingPoint] = line[i];
-     }
-     return value;
- }
+    }
+    return value;
+}
 
- char* getWordFromString(char* word, int pos) {
-     int indexCounter = 0;
-     int setChars = 0;
-     char* newWord = malloc(BUFFER_XLARGE);
-     for (int i=0; i< strlen(word);i++) {
-         if (indexCounter == pos-1) {
-             setChars = 1;
-         }
-         if (word[i] == '\0' || word[i] == ' ') {
-             indexCounter++;
-             if (indexCounter == pos) {
-                 break;
-             }
+char* getWordFromString(char* word, int pos) {
+    int indexCounter = 0;
+    int setChars = 0;
+    char* newWord = malloc(BUFFER_XLARGE);
+    for (int i=0; i< strlen(word);i++) {
+        if (indexCounter == pos-1) {
+            setChars = 1;
+        }
+        if (word[i] == '\0' || word[i] == ' ') {
+            indexCounter++;
+            if (indexCounter == pos) {
+                break;
+            }
 
-         }
-         if (setChars == 1) {sprintf(newWord, "%s%c", newWord, word[i]);}
+        }
+        if (setChars == 1) {sprintf(newWord, "%s%c", newWord, word[i]);}
 
-     }
-     return newWord;
- }
+    }
+    return newWord;
+}
 
 char* getEverythingAfter(char* word, int pos) {
     int indexCounter = 0;
@@ -223,30 +223,6 @@ int sendRequest(char* endpoint, char* sendRequestParam) {
 }
 
 /**
- * The test to see if m_cp works
- *
- * @return EXIT_FAILURE if an error occured, or EXIT_SUCCESS if closed gracefully.
- */
-void *m_cpTest(void *arg) {
-    struct threadArgs *ta = ((struct threadArgs *) arg);
-    char *parallelProg = ta->programName;
-    char *contentsOfParallelProg = ta->programSrc;
-    char *n = ta->n; // number of copies made to the fileSystem
-
-    char *writeLocation = malloc(BUFFER_LARGE);
-    sprintf(writeLocation, "%s/%s", saveLocation, parallelProg);
-    FILE *writeFile = fopen(writeLocation, "w");
-    unsigned long programLength = strlen(contentsOfParallelProg); // Size of the program
-    // Write the contents of programBuffer,
-    // of which each element is of size char,
-    // of which is the total size programSize
-    // to a file writeProg
-    printf(contentsOfParallelProg);
-    fclose(writeFile);
-    return NULL;
-}
-
-/**
  * Listens for requests and calls the required endpoint.
  *
  * @return EXIT_FAILURE if an error occured, or EXIT_SUCCESS if closed gracefully.
@@ -312,13 +288,12 @@ int main(void) {
                     threadToStart = threadIndexes[i];
                 }
             }
-            char **param1;
-            char **param2;
-
+            char** param1;
+            char** param2;
             if (strstr(buffer, "transfer")) {
                 started = 1;
-                char *programName = stripNewline(getWordFromString(buffer, 2));
-                char *programSrc = getEverythingAfter(buffer, 3);
+                char* programName = stripNewline(getWordFromString(buffer, 2));
+                char* programSrc = getEverythingAfter(buffer, 3);
 
                 struct threadArgs ta;
                 ta.programName = programName;
@@ -327,37 +302,30 @@ int main(void) {
 
             } else if (strstr(buffer, "run")) {
                 started = 1;
-                char *parallelProg = stripNewline(getWordFromString(buffer, 2));
-                char *n = stripNewline(getWordFromString(buffer, 3));
+                char* parallelProg = stripNewline(getWordFromString(buffer, 2));
+                char* n = stripNewline(getWordFromString(buffer, 3));
                 struct threadArgs ta;
                 ta.programName = parallelProg;
                 ta.n = n;
                 pthread_create(&threads[threadToStart], NULL, (void *) run, &ta);
-            } else if (strstr(buffer, "closeAgent")) {
+            }
+            else if (strstr(buffer, "closeAgent")) {
                 doConnect = 0;
                 printf("Agent will be closed on disconnect.\n");
-            } else if (strstr(buffer, "m_cpTest")) {
-                started = 1;
-                char *programName = stripNewline(getWordFromString(buffer, 2));
-                char *programSrc = getEverythingAfter(buffer, 3);
-
-                struct threadArgs ta;
-                ta.programName = programName;
-                ta.programSrc = programSrc;
-                pthread_create(&threads[threadToStart], NULL, (void *) m_cpTest, &ta);
             }
             if (started == 1) {
                 pthread_join(threads[threadToStart], NULL);
             }
 
-            if (bytes_received == -1) {
-                perror("Error receiving data");
-                exit(EXIT_FAILURE);
-            }
-
-            // Close sockets
-            close(client_socket);
-            close(server_socket);
         }
+
+        if (bytes_received == -1) {
+            perror("Error receiving data");
+            exit(EXIT_FAILURE);
+        }
+
+        // Close sockets
+        close(client_socket);
+        close(server_socket);
     }
 }

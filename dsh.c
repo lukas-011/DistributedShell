@@ -71,7 +71,7 @@ struct MAgent {
  * Initialized global structs for m_agent
  */
 struct MAgent MAgents[32] = {
-        {},
+        {"127.0.0.1", "8080"},
         {},
         {},
         {},
@@ -485,9 +485,15 @@ int doMRun() {
     for(int i =0; i < 32; i++) {
         if ((MAgents[i].ip != NULL) || (MAgents[i].port != NULL)) {
             // Send the parallel programs
-            sendProgram("parallelProg.c", file, MAgents[i].ip, atoi(MAgents[i].port));
+            int sendResult = sendProgram("parallelProg.c", file, MAgents[i].ip, atoi(MAgents[i].port));
+            if (sendResult == DSH_EXIT_ERROR) {
+                return  DSH_EXIT_ERROR;
+            }
             sleep(2);
-            runProgram("parallelProg","C",MAgents[i].ip, atoi(MAgents[i].port));
+            int runResult = runProgram("parallelProg","C",MAgents[i].ip, atoi(MAgents[i].port));
+            if (runResult == DSH_EXIT_ERROR) {
+                return DSH_EXIT_ERROR;
+            }
             sleep(2);
         }
     }
