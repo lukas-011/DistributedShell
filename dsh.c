@@ -13,6 +13,7 @@
 #define MID_BUFFER 64
 #define CMD_BUFFER 1024
 #define MAX_BUFFER 128
+#define XLARGE_BUFFER 1024
 #define GINORMOUS_BUFFER 4096
 
 struct Argument {
@@ -120,6 +121,11 @@ struct sendRequestParam {
     const char* n;
     const char* ip;
     const int port;
+};
+
+struct arg {
+    int numAgents;
+    char** returnVal;
 };
 
 
@@ -349,72 +355,84 @@ int doMCp() {
 
 void* waitForResponseFromAgents(void* args) {
 
-    int numAgents = *((int*)&args);
-
-    int server_socket, client_socket;
-    struct sockaddr_in server_address, client_address;
-    socklen_t client_address_len = sizeof(client_address);
-    char buffer[GINORMOUS_BUFFER];
-
-    // Create socket
-    if ((server_socket = socket(AF_INET, SOCK_STREAM, 0)) == -1) {
-        perror("Socket creation failed");
-        exit(EXIT_FAILURE);
-    }
-
-    // Initialize server_address structure
-    server_address.sin_family = AF_INET;
-    server_address.sin_addr.s_addr = INADDR_ANY;
-    server_address.sin_port = htons(8081);
-
-    // Bind socket
-    if (bind(server_socket, (struct sockaddr*) &server_address, sizeof (server_address)) == -1) {
-        perror("Socket binding failed");
-        exit(EXIT_FAILURE);
-    }
-
-    // Listen for incoming connections
-    if (listen(server_socket, 5) == -1) {
-        perror("Socket listening failed");
-        exit(EXIT_FAILURE);
-    }
-
-    // Accept incoming connections
-    if ((client_socket = accept(server_socket, (struct sockaddr*)&client_address, &client_address_len)) == -1) {
-        perror("Connection acceptance failed");
-        exit(EXIT_FAILURE);
-    }
-
-    printf("Client connected: %s\n", inet_ntoa(client_address.sin_addr));
-
-    // Receive data from the client
-    ssize_t bytes_received;
+    int doConnect = 1;
     int numReceived = 0;
-    while ((bytes_received = read(client_socket, buffer, GINORMOUS_BUFFER)) >0) {
-        if (numReceived == numAgents) {
-             break;
+    while (doConnect) {
+
+        struct arg* threadArgs = (struct arg*) args;
+        int numAgents = threadArgs->numAgents;
+        char** returnValue = threadArgs->returnVal;
+        int server_socket, client_socket;
+        struct sockaddr_in server_address, client_address;
+        socklen_t client_address_len = sizeof(client_address);
+        char buffer[GINORMOUS_BUFFER];
+
+        // Create socket
+        if ((server_socket = socket(AF_INET, SOCK_STREAM, 0)) == -1) {
+            perror("Socket creation failed");
+            exit(EXIT_FAILURE);
         }
-        int started = 0;
-        int threadToStart;
-        buffer[bytes_received] = '\0'; // Null-terminate the received data
-        printf("Received:\n-----\n%s", buffer);
 
+        // Initialize server_address structure
+        server_address.sin_family = AF_INET;
+        server_address.sin_addr.s_addr = INADDR_ANY;
+        server_address.sin_port = htons(8081);
 
-        if (strstr(buffer, "m_run_listener")) {
-            char* param = stripNewline(getWordFromString(buffer, 2));
+        // Bind socket
+        if (bind(server_socket, (struct sockaddr *) &server_address, sizeof(server_address)) == -1) {
+            perror("Socket binding failed");
+            exit(EXIT_FAILURE);
         }
-        numReceived++;
+
+        // Listen for incoming connections
+        if (listen(server_socket, 5) == -1) {
+            perror("Socket listening failed");
+            exit(EXIT_FAILURE);
+        }
+
+        // Accept incoming connections
+        if ((client_socket = accept(server_socket, (struct sockaddr *) &client_address, &client_address_len)) == -1) {
+            perror("Connection acceptance failed");
+            exit(EXIT_FAILURE);
+        }
+
+        printf("Client connected: %s\n", inet_ntoa(client_address.sin_addr));
+
+
+        // Receive data from the client
+        ssize_t bytes_received;
+        while ((bytes_received = read(client_socket, buffer, GINORMOUS_BUFFER)) > 0) {
+
+            buffer[bytes_received] = '\0'; // Null-terminate the received data
+            printf("Received:\n-----\n%s", buffer);
+            *returnValue = getWordFromString(buffer, 2);
+
+            if (strstr(buffer, "m_run_listener")) {
+                char *param = stripNewline(getWordFromString(buffer, 2));
+            }
+            else if (strstr(buffer, "closeAgent")) {
+                doConnect = 0;
+                printf("Agent will be closed on disconnect.\n");
+            }
+            numReceived++;
+
+
+            if (bytes_received == -1) {
+                perror("Error receiving data");
+                exit(EXIT_FAILURE);
+            }
+
+            // Close sockets
+            close(client_socket);
+            close(server_socket);
+            if (numReceived == numAgents) {
+                doConnect = 0;
+                break;
+            }
+        }
+
+
     }
-
-    if (bytes_received == -1) {
-        perror("Error receiving data");
-        exit(EXIT_FAILURE);
-    }
-
-    // Close sockets
-    close(client_socket);
-    close(server_socket);
-
     return NULL;
 }
 /**
@@ -451,8 +469,13 @@ int doMRun() {
             numAgents++;
         }
     }
+
+
+    char* returnVal = malloc(sizeof(char)*2);
+    struct arg args = { numAgents,  &returnVal};
+
     // Start thread to wait for responses
-    pthread_create(&thread, NULL, (void*) waitForResponseFromAgents, (void*)&numAgents);
+    pthread_create(&thread, NULL, (void*) waitForResponseFromAgents, (void*)&args);
 
     // Distribute the parallel program among the existing agents
     for(int i =0; i < 32; i++) {
@@ -471,6 +494,14 @@ int doMRun() {
     // Close the file
     fclose(file);
 
+    char* runLocal = malloc(XLARGE_BUFFER);
+    strcpy(runLocal, mainProg);
+    for (int i=0; i<numAgents; i++) {
+        strcat(runLocal, " ");
+        strcat(runLocal, returnVal);
+    }
+    system(runLocal);
+    free(runLocal);
     // return a success
     return DSH_EXIT_SUCCESS;
 }
