@@ -69,7 +69,24 @@ void* transfer(void* arg) {
  */
 void run(const char* parallelProg, const char* n) {
     printf("Run Endpoint\n");
-
+    char *compileCommand = malloc(32);
+    strcat(compileCommand, "gcc -o ");
+    strcat(compileCommand, parallelProg);
+    strcat(compileCommand, " ");
+    strcat(compileCommand, parallelProg);
+    strcat(compileCommand, ".c");
+    int compileResult = system(compileCommand);
+    if(compileResult == 0){
+//        All good
+    }else{
+//        Uh oh
+    }
+    char *runProg = malloc(32);
+    strcat(runProg, "./");
+    strcat(runProg, parallelProg);
+    strcat(runProg, " ");
+    strcat(runProg, n);
+    system(runProg);
 }
 
  /**
