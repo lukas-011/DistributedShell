@@ -70,7 +70,7 @@ struct MAgent {
  * Initialized global structs for m_agent
  */
 struct MAgent MAgents[32] = {
-        {"127.0.0.1", "8080"},
+        {"127.0.0.1", "1070"},
         {},
         {},
         {},
@@ -340,7 +340,7 @@ int doMCp() {
     // Send file to file system server
     for(int i = 0; i < 32; i++) {
         if(MAgents[i].ip != NULL || MAgents[i].port != NULL) {
-            sendProgram(local, file, "127.0.0.1", 8080); // Should be 1050 and the ip for the file system for the File System ports
+            sendProgram(local, file, "127.0.0.1", 1050); // Should be 1050 and the ip for the file system for the File System ports
         }
     }
 
@@ -376,7 +376,7 @@ void* waitForResponseFromAgents(void* args) {
         // Initialize server_address structure
         server_address.sin_family = AF_INET;
         server_address.sin_addr.s_addr = INADDR_ANY;
-        server_address.sin_port = htons(8081);
+        server_address.sin_port = htons(1071);
 
         // Bind socket
         if (bind(server_socket, (struct sockaddr *) &server_address, sizeof(server_address)) == -1) {

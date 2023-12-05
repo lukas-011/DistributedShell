@@ -176,7 +176,7 @@ int sendRequest(char* endpoint, char* sendRequestParam) {
     int sockfd;
     sockfd = socket(AF_INET, SOCK_STREAM, 0);
     servaddr.sin_family = AF_INET;
-    servaddr.sin_port = htons(8081);
+    servaddr.sin_port = htons(1071);
     servaddr.sin_addr.s_addr = inet_addr("127.0.0.1");
 
     if (connect(sockfd, (struct sockaddr*) &servaddr, sizeof(servaddr)) <0) {
@@ -225,7 +225,7 @@ int main(void) {
         // Initialize server_address structure
         server_address.sin_family = AF_INET;
         server_address.sin_addr.s_addr = INADDR_ANY;
-        server_address.sin_port = htons(8080);
+        server_address.sin_port = htons(1070);
 
         // Bind socket
         if (bind(server_socket, (struct sockaddr *) &server_address, sizeof(server_address)) == -1) {
