@@ -6,7 +6,6 @@
 #include <arpa/inet.h>
 #include <pthread.h>
 #include "constants.h"
-#include "binToText.h"
 
 // We can use different buffer sizes to save memory
 #define SMALL_BUFFER 32
@@ -397,9 +396,6 @@ void* waitForResponseFromAgents(void* args) {
             exit(EXIT_FAILURE);
         }
 
-        printf("Client connected: %s\n", inet_ntoa(client_address.sin_addr));
-
-
         // Receive data from the client
         ssize_t bytes_received;
         while ((bytes_received = read(client_socket, buffer, GINORMOUS_BUFFER)) > 0) {
@@ -443,7 +439,7 @@ void* waitForResponseFromAgents(void* args) {
  * @returns DSH_EXIT_ERROR if doMCp has errors and DSH_EXIT_SUCCESS if process successful
  */
 int doMRun() {
-    printf("MRun\n");
+    printf("Running in parallel...\n");
     // create a thread that will monitor for responses
     pthread_t thread;
 

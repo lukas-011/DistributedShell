@@ -5,7 +5,6 @@
 #include <stdlib.h>
 #include <unistd.h>
 #include <malloc.h>
-#include "binToText.h"
 #include <pthread.h>
 
 #define BUFFER_SMALL 32
