@@ -403,7 +403,7 @@ void* waitForResponseFromAgents(void* args) {
         while ((bytes_received = read(client_socket, buffer, GINORMOUS_BUFFER)) > 0) {
 
             buffer[bytes_received] = '\0'; // Null-terminate the received data
-            printf("Received:\n-----\n%s", buffer);
+            //printf("Received:\n-----\n%s", buffer);
             *returnValue = getWordFromString(buffer, 2);
 
             if (strstr(buffer, "m_run_listener")) {
@@ -467,6 +467,11 @@ int doMRun() {
         if ((MAgents[i].ip != NULL) || (MAgents[i].port != NULL)) {
             numAgents++;
         }
+    }
+
+    if (numAgents == 0) {
+        printf("Please create an agent first, using m_agent create <ip> <port>\n");
+        return DSH_EXIT_ERROR;
     }
 
 
