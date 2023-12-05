@@ -312,8 +312,6 @@ int doMAgent() {
 
 
 //**********************************************************************************************************************
-//TODO: Not done
-// Lukas
 /**
  * Copies a local file using the name provided in dest. The copy
  * is made to the filesystem server and the number of partitions is
@@ -338,7 +336,7 @@ int doMCp() {
     // Send file to file system server
     for(int i = 0; i < 32; i++) {
         if(MAgents[i].ip != NULL || MAgents[i].port != NULL) {
-            sendProgram(local, file, "127.0.0.1", 1050);
+            sendProgram(local, file, "127.0.0.1", 8080); // Should be 1050 and the ip for the file system for the File System ports
         }
     }
 
@@ -797,5 +795,15 @@ int runProgram(const char* programName, const char* programArg, const char* ip, 
     if (sendRequest(HTTP_POST, "run", params) != 0) {
         return DSH_EXIT_ERROR;
     }
+    return DSH_EXIT_SUCCESS;
+}
+
+int m_cpTest(const char* programName, FILE* programSrc, const char* ip, const int port){
+    char* programSrcText = readTextToBuffer(programSrc); // Save program to char*
+    struct sendRequestParam params = {programName, programSrcText, NULL, ip, port};
+    if (sendRequest(HTTP_POST, "transfer", params) != 0) {
+        return DSH_EXIT_ERROR;
+    }
+
     return DSH_EXIT_SUCCESS;
 }
