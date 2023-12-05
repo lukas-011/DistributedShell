@@ -96,35 +96,7 @@ void* run(void* arg) {
     sprintf(paramToSend,"%d",result);
     sendRequest("m_run_listener",paramToSend);
 
-    // TODO: Fix issue where it can't run on the second time through
     return NULL;
-}
-
-/**
- * Parses a request for a parameter's value
- * @param request The request to parse
- * @param param The parameter to find
- * @return The value of the parameter
- */
-char* parseRequest(const char* request, const char* param) {
-    char* line = strstr(request, param);
-    char* value = malloc(BUFFER_GINORMOUS);
-
-    // Start param length + 1 for equal sign
-    int startingPoint = strlen(param)+1;
-    for (int i=startingPoint; i<strlen(line); i++) {
-
-
-        if (line[i] == '&' || line[i] == '\0') {
-            // We found the end in one form or another so let's break outta here
-            break;
-        }
-
-
-        value[i-startingPoint] = line[i];
-    }
-    free(line); //Not Tested
-    return value;
 }
 
 char* getWordFromString(char* word, int pos) {
@@ -164,7 +136,7 @@ char* getEverythingAfter(char* word, int pos) {
 
 
         if (setChars == 1) { sprintf(newWord, "%s%c", newWord, word[i]); }
-        //newWord[strlen(newWord)] = '\0';
+
     }
 
     return newWord;
@@ -292,8 +264,7 @@ int main(void) {
                     threadToStart = threadIndexes[i];
                 }
             }
-            char** param1;
-            char** param2;
+
             if (strstr(buffer, "transfer")) {
                 started = 1;
                 char* programName = stripNewline(getWordFromString(buffer, 2));

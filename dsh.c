@@ -478,7 +478,6 @@ int doMRun() {
     }
 
 
-    //char* returnVal = malloc(sizeof(char)*2);
     int returnVals[32];
     struct arg args = { numAgents,  returnVals};
 
@@ -504,10 +503,6 @@ int doMRun() {
 
     // Wait for all responses before continuing
     pthread_join(thread, NULL);
-
-    for (int i=0; i < numAgents; i++) {
-        printf("It's the %d!!!!!", returnVals[i]);
-    }
 
     // Close the file
     fclose(file);
@@ -776,7 +771,6 @@ char* getEverythingAfter(char* word, int pos) {
         } else if (word[i] == '\0') {
             break;
         }
-
 
         if (setChars == 1) { sprintf(newWord, "%s%c", newWord, word[i]); }
     }
