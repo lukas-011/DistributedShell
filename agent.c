@@ -95,7 +95,7 @@ void* run(void* arg) {
 
     char* paramToSend = malloc(1);
     sprintf(paramToSend,"%d",result);
-    sendRequest("M_RunListener",paramToSend);
+    sendRequest("m_run_listener",paramToSend);
     free(paramToSend);
 
     return NULL;

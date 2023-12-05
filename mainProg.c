@@ -13,6 +13,10 @@
 #define BUFFER_LARGE 128
 #define BUFFER_GINORMOUS 256000
 
+int main(int argc, char* argv[]) {
+    printf("I have %s rubies.\n",argv[1]);
+}
+
 
 // gather responses from each parallel program and print out the results
 
