@@ -1,9 +1,7 @@
 # DistributedShell
 A distributed shell
 
-## The Plan
-
-### Methods
+## Methods
 
 - startProc: Starts an external process using fork and execve
 - doCommand: Determine which command to run
@@ -12,7 +10,7 @@ A distributed shell
   - deleteAgent: Called with `m_agent delete ip`
   - copyFile: Called with `m_cp local dest`
   - runParellelProg: Called with `m_run mainProg parellelProg`
-
+---
 # Methodology
 So we have an input from the user
 
@@ -53,7 +51,7 @@ we are going to have a "decision tree" for each first argument
   - The main program is ran locally
   - parallel program is sent to each agent that exists
 
-
+----
 ### Then we have to run the parallel program
 - To run a program, we need to have an agent which should also be created as a seperate
   program (Not the same as the distributed shell)
